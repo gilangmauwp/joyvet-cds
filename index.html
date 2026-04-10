@@ -1,0 +1,2969 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JoyVet CDS — Clinical Diagnosis Support</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════════════════════════
+   JOYVET CDS — MASTER STYLESHEET
+   Palette: #334f84 primary | #ffff04 accent | #1a2d50 dark | #f4f6fb light
+════════════════════════════════════════════════════════════════════════ */
+:root {
+  --primary: #334f84;
+  --primary-dark: #1a2d50;
+  --primary-mid: #243d6b;
+  --accent: #ffff04;
+  --accent-dim: rgba(255,255,4,0.15);
+  --white: #ffffff;
+  --light: #f4f6fb;
+  --light-mid: #e8edf5;
+  --text: #1a2540;
+  --text-muted: #5a6a8a;
+  --border: #d0d8ea;
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --sidebar-w: 240px;
+  --radius: 6px;
+  --shadow: 0 2px 12px rgba(51,79,132,0.10);
+  --shadow-card: 0 2px 8px rgba(51,79,132,0.08);
+  --transition: 200ms ease;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { font-size: 15px; scroll-behavior: smooth; }
+
+body {
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+  background: var(--light);
+  color: var(--text);
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+  line-height: 1.5;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--light-mid); }
+::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 3px; }
+
+/* ── SIDEBAR ─────────────────────────────────────────────────────────── */
+#sidebar {
+  width: var(--sidebar-w);
+  min-width: var(--sidebar-w);
+  background: var(--primary-dark);
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow-y: auto;
+  position: fixed;
+  left: 0; top: 0;
+  z-index: 100;
+}
+
+.sidebar-logo {
+  padding: 20px 18px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.sidebar-logo .logo-mark {
+  font-family: 'Inter', sans-serif;
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--accent);
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+.sidebar-logo .logo-sub {
+  font-size: 0.68rem;
+  color: rgba(255,255,255,0.5);
+  margin-top: 2px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.sidebar-nav { padding: 10px 0; flex: 1; }
+
+.nav-label {
+  font-size: 0.65rem;
+  color: rgba(255,255,255,0.35);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 12px 18px 4px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 18px;
+  color: rgba(255,255,255,0.65);
+  cursor: pointer;
+  transition: all var(--transition);
+  font-size: 0.88rem;
+  font-weight: 400;
+  border-left: 3px solid transparent;
+}
+.nav-item:hover { background: rgba(255,255,255,0.06); color: var(--white); }
+.nav-item.active {
+  background: rgba(255,255,4,0.10);
+  color: var(--accent);
+  border-left-color: var(--accent);
+  font-weight: 600;
+}
+.nav-item .nav-icon { width: 16px; text-align: center; font-size: 0.9rem; }
+
+.sidebar-session {
+  padding: 12px 18px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  font-size: 0.75rem;
+  color: rgba(255,255,255,0.4);
+}
+.session-patient {
+  font-size: 0.82rem;
+  color: rgba(255,255,255,0.8);
+  font-weight: 500;
+  margin-bottom: 2px;
+}
+
+/* ── MAIN AREA ─────────────────────────────────────────────────────────── */
+#main {
+  margin-left: var(--sidebar-w);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ── TOPBAR ──────────────────────────────────────────────────────────── */
+#topbar {
+  background: var(--white);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+  height: 54px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+.patient-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--light);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 4px 14px 4px 10px;
+  font-size: 0.82rem;
+}
+.patient-badge .species-icon { font-size: 1rem; }
+.patient-badge .patient-name { font-weight: 600; color: var(--primary); }
+.patient-badge .patient-meta { color: var(--text-muted); font-size: 0.76rem; }
+
+#btn-new-case {
+  margin-left: auto;
+  background: var(--primary);
+  color: var(--white);
+  border: none;
+  border-radius: var(--radius);
+  padding: 7px 16px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition);
+  font-family: inherit;
+}
+#btn-new-case:hover { background: var(--primary-mid); }
+
+.topbar-date {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+/* ── PROGRESS BAR ────────────────────────────────────────────────────── */
+#progress-bar {
+  background: var(--white);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  flex-shrink: 0;
+}
+.progress-step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 16px 6px 0;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  position: relative;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.progress-step .step-num {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.7rem; font-weight: 700;
+  transition: all var(--transition);
+  flex-shrink: 0;
+}
+.progress-step.active .step-num {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--primary-dark);
+}
+.progress-step.done .step-num {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--white);
+}
+.progress-step.active { color: var(--primary); font-weight: 600; }
+.progress-step.done { color: var(--primary); }
+.progress-connector {
+  width: 28px;
+  height: 2px;
+  background: var(--border);
+  flex-shrink: 0;
+  margin: 0 4px;
+}
+.progress-connector.done { background: var(--primary); }
+
+/* ── CONTENT ─────────────────────────────────────────────────────────── */
+#content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+}
+
+/* ── PANELS / VIEWS ──────────────────────────────────────────────────── */
+.view { display: none; }
+.view.active { display: block; }
+
+/* ── CARD ─────────────────────────────────────────────────────────────── */
+.card {
+  background: var(--white);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+  border: 1px solid var(--border);
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+.card-header {
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--white);
+}
+.card-title {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--primary);
+  border-left: 3px solid var(--accent);
+  padding-left: 10px;
+  letter-spacing: 0.02em;
+}
+.card-body { padding: 16px 20px; }
+
+/* ── FORM ELEMENTS ────────────────────────────────────────────────────── */
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 14px;
+}
+.form-grid-3 { grid-template-columns: repeat(3, 1fr); }
+.form-grid-2 { grid-template-columns: repeat(2, 1fr); }
+
+.field-group { display: flex; flex-direction: column; gap: 4px; }
+
+label.field-label {
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+label.field-label .required { color: var(--danger); margin-left: 2px; }
+
+input[type="text"], input[type="number"], select, textarea {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px 10px;
+  font-size: 0.88rem;
+  font-family: inherit;
+  color: var(--text);
+  background: var(--white);
+  transition: border-color var(--transition);
+  width: 100%;
+}
+input[type="text"]:focus, input[type="number"]:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(51,79,132,0.08);
+}
+select { cursor: pointer; }
+
+/* ── CHECKBOX/RADIO GROUPS ────────────────────────────────────────────── */
+.check-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+.check-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  transition: all var(--transition);
+  user-select: none;
+  background: var(--white);
+}
+.check-pill:hover { border-color: var(--primary); color: var(--primary); background: var(--light); }
+.check-pill input { display: none; }
+.check-pill.checked {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--white);
+  font-weight: 500;
+}
+.check-pill.checked-accent {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--primary-dark);
+  font-weight: 600;
+}
+
+.radio-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+.radio-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 12px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  transition: all var(--transition);
+  user-select: none;
+  background: var(--white);
+}
+.radio-pill:hover { border-color: var(--primary); color: var(--primary); }
+.radio-pill input { display: none; }
+.radio-pill.selected {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--white);
+  font-weight: 500;
+}
+
+/* ── SECTION ──────────────────────────────────────────────────────────── */
+.section-title {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--primary-dark);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin: 20px 0 10px;
+  padding-bottom: 6px;
+  border-bottom: 2px solid var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* ── QUICK NORMAL BUTTON ──────────────────────────────────────────────── */
+.btn-quick-normal {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition);
+  font-family: inherit;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.btn-quick-normal:hover { border-color: var(--success); color: var(--success); }
+
+/* ── BUTTONS ──────────────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 9px 20px;
+  border-radius: var(--radius);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition);
+  font-family: inherit;
+  border: none;
+}
+.btn-primary {
+  background: var(--primary);
+  color: var(--white);
+}
+.btn-primary:hover { background: var(--primary-mid); }
+.btn-accent {
+  background: var(--accent);
+  color: var(--primary-dark);
+}
+.btn-accent:hover { background: #eeee00; box-shadow: 0 2px 8px rgba(255,255,4,0.4); }
+.btn-outline {
+  background: transparent;
+  color: var(--primary);
+  border: 1.5px solid var(--primary);
+}
+.btn-outline:hover { background: var(--primary); color: var(--white); }
+.btn-ghost {
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+}
+.btn-ghost:hover { border-color: var(--primary); color: var(--primary); }
+
+.btn-nav-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 0 4px;
+  border-top: 1px solid var(--border);
+  margin-top: 20px;
+}
+
+/* ── VITAL SIGNS INPUTS ────────────────────────────────────────────────── */
+.vital-input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--light);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+.vital-label { font-size: 0.8rem; font-weight: 600; width: 180px; flex-shrink: 0; color: var(--primary); }
+.vital-input { width: 90px !important; }
+.vital-unit { font-size: 0.76rem; color: var(--text-muted); }
+.vital-status {
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+  margin-left: auto;
+}
+.vital-status.normal { background: #dcfce7; color: #166534; }
+.vital-status.high { background: #fee2e2; color: #991b1b; }
+.vital-status.low { background: #dbeafe; color: #1e40af; }
+
+/* ── RESULTS ──────────────────────────────────────────────────────────── */
+#results-panel {
+  display: none;
+}
+#results-panel.visible { display: block; }
+
+.results-header {
+  background: var(--primary-dark);
+  color: var(--white);
+  padding: 16px 24px;
+  border-radius: var(--radius) var(--radius) 0 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.results-header h2 {
+  font-family: 'Inter', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.results-meta { font-size: 0.8rem; color: rgba(255,255,255,0.6); margin-top: 2px; }
+
+.result-section {
+  border: 1px solid var(--border);
+  border-top: none;
+  background: var(--white);
+}
+.result-section:last-child { border-radius: 0 0 var(--radius) var(--radius); }
+.result-section-header {
+  padding: 12px 20px;
+  background: var(--light);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+  transition: background var(--transition);
+}
+.result-section-header:hover { background: var(--light-mid); }
+.result-section-title {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--primary);
+  letter-spacing: 0.03em;
+  flex: 1;
+}
+.result-section-badge {
+  background: var(--primary);
+  color: var(--white);
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+.result-section-body {
+  padding: 16px 20px;
+  display: none;
+}
+.result-section-body.open { display: block; }
+
+/* DDx list */
+.ddx-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--light-mid);
+}
+.ddx-item:last-child { border-bottom: none; }
+.ddx-rank {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: var(--white);
+  font-size: 0.72rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center; justify-content: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.ddx-rank.rank-1 { background: var(--accent); color: var(--primary-dark); }
+.ddx-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+.ddx-category {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+.confidence-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+.confidence-high { background: #dcfce7; color: #166534; }
+.confidence-medium { background: #fef9c3; color: #713f12; }
+.confidence-low { background: #fee2e2; color: #991b1b; }
+
+/* Tests */
+.test-tier {
+  margin-bottom: 12px;
+}
+.test-tier-title {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--primary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 6px;
+}
+.test-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.test-tag {
+  background: var(--light);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 3px 9px;
+  font-size: 0.78rem;
+  color: var(--text);
+}
+
+/* DDx selected highlight */
+.ddx-item {
+  transition: background 120ms ease;
+  border-radius: 6px;
+  padding: 10px 8px;
+  margin: 0 -8px;
+}
+.ddx-item:hover { background: var(--light); }
+.ddx-item.ddx-selected {
+  background: rgba(51,79,132,0.07);
+  border-left: 3px solid var(--primary);
+  padding-left: 10px;
+  margin-left: -11px;
+}
+
+/* Treatment — horizontal columns layout */
+.treatment-columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+  padding: 4px 0;
+}
+.treatment-col {
+  background: var(--light);
+  border-radius: 8px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+}
+.treatment-col-title {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--primary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 2px solid var(--accent);
+}
+
+/* Treatment */
+.treatment-item {
+  padding: 4px 0 4px 10px;
+  font-size: 0.84rem;
+  border-left: 2px solid var(--accent);
+  margin-bottom: 5px;
+  line-height: 1.5;
+}
+.treatment-subtitle {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--primary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 12px 0 6px;
+}
+
+/* Prognosis badge */
+.prognosis-badge {
+  display: inline-block;
+  padding: 4px 14px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.prognosis-good { background: #dcfce7; color: #166534; }
+.prognosis-fair { background: #fef9c3; color: #713f12; }
+.prognosis-guarded { background: #fed7aa; color: #7c2d12; }
+.prognosis-poor { background: #fee2e2; color: #991b1b; }
+
+/* Warning banner */
+.warning-banner {
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+  border-left: 4px solid #f59e0b;
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  margin-bottom: 14px;
+  font-size: 0.83rem;
+  color: #78350f;
+}
+
+/* Emergency banner */
+.emergency-banner {
+  background: var(--danger);
+  color: var(--white);
+  border-radius: var(--radius);
+  padding: 14px 20px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  animation: pulse-border 1.2s ease-in-out infinite;
+  box-shadow: 0 0 0 3px rgba(239,68,68,0.3);
+}
+.emergency-banner .emg-icon { font-size: 1.5rem; flex-shrink: 0; }
+.emergency-banner .emg-title { font-family: 'Inter', sans-serif; font-size: 1rem; font-weight: 800; letter-spacing: 0.04em; margin-bottom: 3px; }
+.emergency-banner .emg-detail { font-size: 0.82rem; font-weight: 400; opacity: 0.92; line-height: 1.5; }
+@keyframes pulse-border { 0%,100% { box-shadow: 0 0 0 3px rgba(239,68,68,0.3); } 50% { box-shadow: 0 0 0 6px rgba(239,68,68,0.15); } }
+
+/* Weight dose inline highlight */
+.dose-calc { background: rgba(51,79,132,0.08); border-radius: 3px; padding: 0 4px; font-weight: 600; color: var(--primary); font-size: 0.82em; }
+
+/* Case history */
+.case-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background var(--transition);
+}
+.case-item:hover { background: var(--light); }
+.case-meta { font-size: 0.75rem; color: var(--text-muted); }
+
+/* ── DASHBOARD ───────────────────────────────────────────────────────── */
+.dashboard-hero {
+  background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+  color: var(--white);
+  border-radius: var(--radius);
+  padding: 32px 36px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.dashboard-hero-logo {
+  flex-shrink: 0;
+}
+.dashboard-hero-text h1 {
+  font-family: 'Inter', sans-serif;
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.dashboard-hero-text p { font-size: 0.88rem; opacity: 0.70; margin-top: 6px; line-height: 1.5; }
+
+/* ── PE ACCORDION ────────────────────────────────────────────────────── */
+.pe-accordion {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 8px;
+  overflow: hidden;
+  background: var(--white);
+}
+.pe-accordion-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  cursor: pointer;
+  user-select: none;
+  transition: background 80ms ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.pe-accordion-header:hover { background: var(--light); }
+.pe-accordion.open > .pe-accordion-header { background: var(--light); border-bottom: 1px solid var(--border); }
+.pe-accordion-title {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--primary-dark);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.pe-accordion-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.pe-accordion-chevron {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  transition: transform 80ms ease;
+}
+.pe-accordion.open .pe-accordion-chevron { transform: rotate(90deg); }
+.pe-accordion-body {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 90ms ease-out;
+}
+.pe-accordion.open .pe-accordion-body {
+  max-height: 2000px;
+  transition: max-height 90ms ease-in;
+}
+.pe-accordion-inner {
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ── PRINT STYLES ─────────────────────────────────────────────────────── */
+/* ── CLIENT PRINT HEADER (hidden on screen, shown on client print) ────── */
+.client-print-header {
+  display: none;
+}
+/* ── CLIENT PRINT: hide clinical-only sections ─────────────────────────── */
+body.client-print-mode .clinical-only-section {
+  display: none !important;
+}
+
+@media print {
+  #sidebar, #topbar, #progress-bar, .btn-nav-row, #btn-new-case,
+  .btn-accent, .btn-outline, .btn-ghost, .btn,
+  .view:not(#view-step4) { display: none !important; }
+  #view-step4 { display: block !important; }
+  #main { margin-left: 0 !important; padding: 0 !important; }
+  #content { padding: 0 !important; overflow: visible !important; }
+  body { background: white; overflow: visible; }
+  .result-section-body { display: block !important; max-height: none !important; overflow: visible !important; }
+  #results-panel { display: block !important; }
+  .card { box-shadow: none; border: 1px solid #ccc; }
+  @page { margin: 1.5cm; size: A4; }
+
+  /* Full record print: show everything except toolbar */
+  body:not(.client-print-mode) #warnings-results { display: block !important; }
+  body:not(.client-print-mode) .client-print-header { display: none !important; }
+
+  /* CLIENT PRINT: show only treatment (sec 4) + education (sec 5) + client header */
+  body.client-print-mode .clinical-only-section { display: none !important; }
+  body.client-print-mode #result-section-3 { display: none !important; }
+  body.client-print-mode #warnings-results { display: none !important; }
+  body.client-print-mode .client-print-header { display: block !important; }
+  body.client-print-mode .results-header { display: none !important; }
+
+  /* Horizontal columns flatten on print */
+  .treatment-columns { grid-template-columns: 1fr !important; }
+  .treatment-col { break-inside: avoid; }
+  .result-section-header { cursor: default; }
+  .ddx-item.ddx-selected { background: #eef2fa !important; }
+  .dose-calc { background: #fffde7; border: 1px solid #f9a825; padding: 1px 4px; border-radius: 3px; font-size: 0.85em; }
+}
+
+/* ── ABOUT ─────────────────────────────────────────────────────────── */
+.about-section { max-width: 700px; }
+.about-section h2 {
+  font-family: 'Inter', sans-serif;
+  font-size: 1.1rem;
+  color: var(--primary);
+  margin-bottom: 8px;
+}
+.about-section p { font-size: 0.88rem; line-height: 1.7; color: var(--text-muted); margin-bottom: 10px; }
+
+/* ── RESPONSIVE ─────────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  :root { --sidebar-w: 56px; }
+  .sidebar-logo .logo-sub,
+  .nav-item span:not(.nav-icon),
+  .nav-label,
+  .sidebar-session { display: none; }
+  .nav-item { justify-content: center; padding: 12px; }
+  .form-grid-3 { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 600px) {
+  .form-grid-3, .form-grid-2 { grid-template-columns: 1fr; }
+  #topbar { padding: 0 12px; }
+  #content { padding: 12px; }
+}
+
+/* ── EMPTY STATE ─────────────────────────────────────────────────────── */
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-muted);
+}
+.empty-state .empty-icon { font-size: 2.5rem; margin-bottom: 12px; }
+.empty-state p { font-size: 0.9rem; }
+
+/* ── LOADING / GENERATE ──────────────────────────────────────────────── */
+#generate-btn-wrap { text-align: center; padding: 10px 0; }
+.spinner {
+  display: inline-block;
+  width: 18px; height: 18px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  vertical-align: middle;
+  margin-right: 6px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── OTHER SPECIFY ───────────────────────────────────────────────────── */
+.other-specify {
+  display: none;
+  margin-top: 6px;
+}
+.other-specify.show { display: flex; gap: 8px; align-items: center; }
+.other-specify input { flex: 1; }
+
+/* ── CONFIRM DIALOG ──────────────────────────────────────────────────── */
+#confirm-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+#confirm-overlay.show { display: flex; }
+#confirm-box {
+  background: var(--white);
+  border-radius: var(--radius);
+  padding: 28px 32px;
+  max-width: 360px;
+  width: 90%;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+}
+#confirm-box h3 {
+  font-family: 'Inter', sans-serif;
+  font-size: 1rem;
+  margin-bottom: 10px;
+}
+#confirm-box p { font-size: 0.88rem; color: var(--text-muted); margin-bottom: 20px; }
+#confirm-box .btn-row { display: flex; gap: 10px; justify-content: flex-end; }
+</style>
+</head>
+<body>
+
+<!-- ── SIDEBAR ──────────────────────────────────────────────────────────── -->
+<nav id="sidebar">
+  <div class="sidebar-logo">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <img src="Joy Vet Care.png" alt="Joy Vet Care" id="sidebar-logo-img"
+           style="height:52px;width:52px;object-fit:cover;flex-shrink:0;border-radius:50%;border:2px solid rgba(255,255,255,0.15);"
+           onerror="this.style.display='none';document.getElementById('sidebar-logo-fallback').style.display='flex';">
+      <div id="sidebar-logo-fallback" style="display:none;align-items:center;justify-content:center;width:52px;height:52px;background:rgba(255,255,255,0.10);border-radius:50%;flex-shrink:0;">
+        <svg width="30" height="30" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M20 22C20 19.79 21.79 18 24 18H28C30.21 18 32 19.79 32 22V26C32 29.31 29.31 32 26 32C22.69 32 20 29.31 20 26V22Z" fill="#ffff04"/>
+          <circle cx="23" cy="22" r="1.5" fill="#1a2d50"/>
+          <circle cx="29" cy="22" r="1.5" fill="#1a2d50"/>
+          <path d="M23 27C23 27 24 28.5 26 28.5C28 28.5 29 27 29 27" stroke="#1a2d50" stroke-width="1.5" stroke-linecap="round"/>
+          <path d="M18 18L20 22M34 18L32 22" stroke="#ffff04" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div>
+        <div class="logo-mark">JoyVet Care</div>
+        <div class="logo-sub">Clinical Diagnosis Support</div>
+      </div>
+    </div>
+  </div>
+  <div class="sidebar-nav">
+    <div class="nav-label">Main</div>
+    <div class="nav-item active" onclick="showView('dashboard')" id="nav-dashboard">
+      <span class="nav-icon">🏠</span><span>Dashboard</span>
+    </div>
+    <div class="nav-item" onclick="startNewCaseFlow()" id="nav-new">
+      <span class="nav-icon">➕</span><span>New Case</span>
+    </div>
+    <div class="nav-label">Current Case</div>
+    <div class="nav-item" onclick="goToStep(0)" id="nav-step0">
+      <span class="nav-icon">🐾</span><span>Patient Profile</span>
+    </div>
+    <div class="nav-item" onclick="goToStep(1)" id="nav-step1">
+      <span class="nav-icon">📝</span><span>Anamnesis</span>
+    </div>
+    <div class="nav-item" onclick="goToStep(2)" id="nav-step2">
+      <span class="nav-icon">🔬</span><span>Physical Exam</span>
+    </div>
+    <div class="nav-item" onclick="goToStep(3)" id="nav-step3">
+      <span class="nav-icon">📊</span><span>Vital Signs</span>
+    </div>
+    <div class="nav-item" onclick="goToStep(4)" id="nav-step4">
+      <span class="nav-icon">⚕</span><span>Results</span>
+    </div>
+    <div class="nav-label">Records</div>
+    <div class="nav-item" onclick="showView('history')" id="nav-history">
+      <span class="nav-icon">📂</span><span>Case History</span>
+    </div>
+    <div class="nav-item" onclick="printRecord()">
+      <span class="nav-icon">🖨</span><span>Print Record</span>
+    </div>
+    <div class="nav-item" onclick="showView('about')" id="nav-about">
+      <span class="nav-icon">ℹ</span><span>About</span>
+    </div>
+  </div>
+  <div class="sidebar-session">
+    <div class="session-patient" id="sidebar-patient-name">No active case</div>
+    <div id="sidebar-session-time"></div>
+  </div>
+</nav>
+
+<!-- ── MAIN ─────────────────────────────────────────────────────────────── -->
+<div id="main">
+
+  <!-- Topbar -->
+  <div id="topbar">
+    <div class="patient-badge" id="patient-badge">
+      <span class="species-icon" id="topbar-species-icon">🐾</span>
+      <div>
+        <div class="patient-name" id="topbar-patient-name">No Active Case</div>
+        <div class="patient-meta" id="topbar-patient-meta">Start a new case to begin</div>
+      </div>
+    </div>
+    <div class="topbar-date" id="topbar-date"></div>
+    <button id="btn-new-case" onclick="startNewCaseFlow()">+ New Case</button>
+  </div>
+
+  <!-- Progress Bar -->
+  <div id="progress-bar">
+    <div class="progress-step active" id="prog-0" onclick="goToStep(0)">
+      <div class="step-num">1</div><span>Patient</span>
+    </div>
+    <div class="progress-connector" id="conn-0"></div>
+    <div class="progress-step" id="prog-1" onclick="goToStep(1)">
+      <div class="step-num">2</div><span>Anamnesis</span>
+    </div>
+    <div class="progress-connector" id="conn-1"></div>
+    <div class="progress-step" id="prog-2" onclick="goToStep(2)">
+      <div class="step-num">3</div><span>Physical Exam</span>
+    </div>
+    <div class="progress-connector" id="conn-2"></div>
+    <div class="progress-step" id="prog-3" onclick="goToStep(3)">
+      <div class="step-num">4</div><span>Vitals</span>
+    </div>
+    <div class="progress-connector" id="conn-3"></div>
+    <div class="progress-step" id="prog-4" onclick="goToStep(4)">
+      <div class="step-num">5</div><span>Results</span>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div id="content">
+
+    <!-- ══════════════════════ DASHBOARD VIEW ══════════════════════════ -->
+    <div class="view active" id="view-dashboard">
+      <div class="dashboard-hero">
+        <div class="dashboard-hero-logo">
+          <svg width="52" height="52" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <rect width="52" height="52" rx="12" fill="rgba(255,255,255,0.12)"/>
+            <path d="M26 10C17.16 10 10 17.16 10 26C10 34.84 17.16 42 26 42C34.84 42 42 34.84 42 26C42 17.16 34.84 10 26 10Z" fill="#ffff04" fill-opacity="0.15"/>
+            <path d="M20 22C20 19.79 21.79 18 24 18H28C30.21 18 32 19.79 32 22V26C32 29.31 29.31 32 26 32C22.69 32 20 29.31 20 26V22Z" fill="#ffff04"/>
+            <circle cx="23" cy="22" r="1.5" fill="#1a2d50"/>
+            <circle cx="29" cy="22" r="1.5" fill="#1a2d50"/>
+            <path d="M23 27C23 27 24 28.5 26 28.5C28 28.5 29 27 29 27" stroke="#1a2d50" stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M18 18L20 22M34 18L32 22M16 20C16 18 17 17 18 18M36 20C36 18 35 17 34 18" stroke="#ffff04" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="dashboard-hero-text">
+          <h1>JoyVet Care</h1>
+          <p>Clinical Diagnosis Support — evidence-based veterinary diagnostic assistance for clinical professionals</p>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-body" style="padding:20px 24px;">
+          <button class="btn btn-accent" onclick="startNewCaseFlow()" style="font-size:1rem;padding:12px 32px;font-weight:700;">▶ Start New Case</button>
+        </div>
+      </div>
+      <div class="card" id="recent-cases-card">
+        <div class="card-header"><div class="card-title">Recent Cases</div></div>
+        <div class="card-body" id="recent-cases-list">
+          <div class="empty-state"><div class="empty-icon">📋</div><p>No cases recorded yet.</p></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════ STEP 0: PATIENT ══════════════════════════ -->
+    <div class="view" id="view-step0">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Patient Profile</div>
+          <span style="font-size:0.76rem;color:var(--text-muted);">* Required fields</span>
+        </div>
+        <div class="card-body">
+          <div class="form-grid form-grid-3">
+            <div class="field-group">
+              <label class="field-label">Patient Name <span class="required">*</span></label>
+              <input type="text" id="f_patient_name" placeholder="e.g. Max" autocomplete="off">
+            </div>
+            <div class="field-group">
+              <label class="field-label">Species <span class="required">*</span></label>
+              <select id="f_species" onchange="onSpeciesChange()">
+                <option value="dog">Dog (Canine)</option>
+                <option value="cat">Cat (Feline)</option>
+                <option value="rabbit">Rabbit (Lagomorph)</option>
+                <option value="bird">Bird (Avian)</option>
+                <option value="exotic">Exotic / Small Mammal</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div class="field-group">
+              <label class="field-label">Breed</label>
+              <input type="text" id="f_breed" placeholder="e.g. Labrador Retriever" autocomplete="off">
+            </div>
+            <div class="field-group">
+              <label class="field-label">Age</label>
+              <div style="display:flex;gap:6px;">
+                <input type="number" id="f_age_years" placeholder="Years" min="0" max="30" style="width:50%;">
+                <input type="number" id="f_age_months" placeholder="Months" min="0" max="11" style="width:50%;">
+              </div>
+            </div>
+            <div class="field-group">
+              <label class="field-label">Sex <span class="required">*</span></label>
+              <select id="f_sex">
+                <option value="male_intact">Male Intact</option>
+                <option value="male_neutered">Male Neutered</option>
+                <option value="female_intact">Female Intact</option>
+                <option value="female_spayed">Female Spayed</option>
+                <option value="unknown">Unknown</option>
+              </select>
+            </div>
+            <div class="field-group">
+              <label class="field-label">Weight (kg)</label>
+              <input type="number" id="f_weight" placeholder="e.g. 12.5" step="0.1" min="0">
+            </div>
+            <div class="field-group">
+              <label class="field-label">Owner Name</label>
+              <input type="text" id="f_owner_name" placeholder="Owner / Client name" autocomplete="off">
+            </div>
+            <div class="field-group">
+              <label class="field-label">Visit Date</label>
+              <input type="text" id="f_visit_date" readonly>
+            </div>
+            <div class="field-group">
+              <label class="field-label">Case / File No.</label>
+              <input type="text" id="f_case_no" placeholder="Optional">
+            </div>
+          </div>
+
+          <div class="btn-nav-row">
+            <span></span>
+            <button class="btn btn-accent" onclick="nextStep()">Next: Anamnesis →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════ STEP 1: ANAMNESIS ════════════════════════ -->
+    <div class="view" id="view-step1">
+      <div class="card" style="border-radius:6px 6px 0 0;margin-bottom:0;">
+        <div class="card-header">
+          <div class="card-title">Anamnesis — History Taking</div>
+          <button class="btn-quick-normal" onclick="quickNormalAnamnesis()">⚡ Quick Normal</button>
+        </div>
+      </div>
+      <!-- Accordion sections built by JS -->
+      <div id="anamnesis-body"></div>
+      <div class="card" style="border-radius:0 0 6px 6px;border-top:none;margin-top:0;">
+        <div class="card-body" style="padding:14px 20px 16px;">
+          <label class="field-label" style="display:block;margin-bottom:6px;">Additional History Notes</label>
+          <textarea id="f_history_notes" rows="2" placeholder="Free text — any additional relevant history..." style="width:100%;resize:vertical;font-family:inherit;font-size:0.88rem;"></textarea>
+          <div class="btn-nav-row">
+            <button class="btn btn-ghost" onclick="prevStep()">← Back</button>
+            <button class="btn btn-accent" onclick="nextStep()">Next: Physical Exam →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════ STEP 2: PHYSICAL EXAM ════════════════════ -->
+    <div class="view" id="view-step2">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Physical Examination</div>
+          <button class="btn-quick-normal" onclick="quickNormalExam()">⚡ Quick Normal</button>
+        </div>
+        <div class="card-body" id="pe-body">
+          <!-- Built by JS -->
+        </div>
+      </div>
+      <div class="btn-nav-row" style="margin-top:12px;">
+        <button class="btn btn-ghost" onclick="prevStep()">← Back</button>
+        <button class="btn btn-accent" onclick="nextStep()">Next: Vital Signs →</button>
+      </div>
+    </div>
+
+    <!-- ══════════════════════ STEP 3: VITAL SIGNS ══════════════════════ -->
+    <div class="view" id="view-step3">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Vital Signs</div>
+        </div>
+        <div class="card-body">
+          <div style="display:flex;flex-direction:column;gap:10px;max-width:600px;" id="vitals-body">
+            <!-- Built by JS -->
+          </div>
+
+          <div class="section-title" style="margin-top:20px;">Mucous Membranes</div>
+          <div class="field-group">
+            <label class="field-label">CRT (Capillary Refill Time)</label>
+            <div class="radio-group" id="crt-group"></div>
+          </div>
+          <div class="field-group" style="margin-top:12px;">
+            <label class="field-label">Mucous Membrane Color</label>
+            <div class="radio-group" id="mm-group"></div>
+          </div>
+
+          <div id="warnings-box"></div>
+
+          <div class="btn-nav-row">
+            <button class="btn btn-ghost" onclick="prevStep()">← Back</button>
+            <div id="generate-btn-wrap">
+              <button class="btn btn-accent" style="font-size:1rem;padding:12px 32px;" onclick="generateResults()">
+                ⚕ Generate Clinical Assessment
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════ STEP 4: RESULTS ══════════════════════════ -->
+    <div class="view" id="view-step4">
+      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center;">
+        <button class="btn btn-ghost" onclick="prevStep()">← Back to Vitals</button>
+        <button class="btn btn-outline" onclick="copyToClipboard()">📋 Copy</button>
+        <button class="btn btn-outline" onclick="printRecord()">🖨 Full Record</button>
+        <button class="btn" style="background:var(--primary);color:white;font-weight:600;gap:6px;" onclick="printForClient()">
+          📄 Print / Send to Client
+        </button>
+        <button class="btn btn-ghost" onclick="saveCase()">💾 Save</button>
+      </div>
+      <div id="warnings-results"></div>
+      <div id="results-panel"></div>
+    </div>
+
+    <!-- ══════════════════════ CASE HISTORY VIEW ════════════════════════ -->
+    <div class="view" id="view-history">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Case History (Last 10 Sessions)</div>
+          <button class="btn-quick-normal" onclick="clearHistory()" style="color:var(--danger);border-color:var(--danger);">Clear All</button>
+        </div>
+        <div class="card-body" id="history-list">
+          <div class="empty-state"><div class="empty-icon">📂</div><p>No saved cases yet.</p></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════ ABOUT VIEW ════════════════════════════════ -->
+    <div class="view" id="view-about">
+      <div class="card">
+        <div class="card-header"><div class="card-title">About JoyVet CDS</div></div>
+        <div class="card-body about-section">
+          <h2>JoyVet Clinical Diagnosis Support v1.0</h2>
+          <p>A fully offline-capable, browser-based veterinary clinical decision support tool. Built for use in busy clinical environments. Requires no internet connection — simply open index.html to start.</p>
+          <h2>Knowledge Base</h2>
+          <p>Covers 80+ conditions across Dermatology, Internal Medicine, Oncology, OB/GYN, Neurology, Emergency, Musculoskeletal, and Exotic Animal medicine. All clinical data is based on evidence-based veterinary standards.</p>
+          <h2>Disclaimer</h2>
+          <p><strong>This tool is a clinical decision support aid only.</strong> All diagnoses, treatments, and clinical decisions must be made by a licensed veterinarian using their clinical judgment. Drug dosages are guidelines — always verify with current formularies. Not a substitute for professional veterinary assessment.</p>
+          <h2>Species Supported</h2>
+          <p>Dog · Cat · Rabbit · Bird (Avian) · Exotic/Small Mammal</p>
+          <h2>How to Use (Offline)</h2>
+          <p>1. Copy the JoyVet-CDS folder to your device (USB, local drive, LAN share).<br>
+          2. Double-click index.html to open in any modern browser (Chrome, Firefox, Edge, Safari).<br>
+          3. No internet connection required. Case data is saved locally in your browser's localStorage.</p>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<!-- Confirm Dialog -->
+<div id="confirm-overlay">
+  <div id="confirm-box">
+    <h3 id="confirm-title">Confirm Action</h3>
+    <p id="confirm-msg">Are you sure?</p>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="closeConfirm()">Cancel</button>
+      <button class="btn btn-primary" id="confirm-ok-btn">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<script src="knowledge-base.js"></script>
+<script>
+// ══════════════════════════════════════════════════════════════════════════
+// JOYVET CDS — APP ENGINE
+// ══════════════════════════════════════════════════════════════════════════
+
+// ── STATE ──────────────────────────────────────────────────────────────────
+let currentStep = -1; // -1 = dashboard
+let formData = {};
+let sessionCases = 0;
+let autosaveTimer = null;
+
+// ── INIT ───────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  setDate();
+  buildAnamnesisForms();
+  buildPhysicalExamForm();
+  buildVitalsForm();
+  loadRecentCases();
+  loadAutosave();
+  updateSessionStats();
+
+  // Keyboard shortcuts
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && currentStep > 0) prevStep();
+    if (e.key === 'Enter' && e.ctrlKey) {
+      if (currentStep >= 0 && currentStep < 3) nextStep();
+      else if (currentStep === 3) generateResults();
+    }
+  });
+
+  startAutosave();
+});
+
+function setDate() {
+  const now = new Date();
+  const opts = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
+  const dateStr = now.toLocaleDateString('en-GB', opts);
+  document.getElementById('topbar-date').textContent = dateStr;
+  document.getElementById('f_visit_date').value = now.toISOString().split('T')[0];
+  document.getElementById('sidebar-session-time').textContent = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+}
+
+// ── VIEW NAVIGATION ────────────────────────────────────────────────────────
+function showView(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-' + name).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const navEl = document.getElementById('nav-' + name);
+  if (navEl) navEl.classList.add('active');
+  if (name === 'history') loadRecentCases();
+}
+
+function goToStep(step) {
+  currentStep = step;
+  showView('step' + step);
+  updateProgressBar(step);
+  updateSidebarNav(step);
+  window.scrollTo(0, 0);
+}
+
+function nextStep() {
+  if (currentStep === 0) {
+    if (!validatePatient()) return;
+    updatePatientBadge();
+  }
+  goToStep(currentStep + 1);
+}
+function prevStep() {
+  if (currentStep > 0) goToStep(currentStep - 1);
+  else showView('dashboard');
+}
+
+function startNewCaseFlow() {
+  showConfirm('Start New Case', 'Clear the current case and start fresh?', () => {
+    resetForm();
+    goToStep(0);
+  });
+}
+
+function resetForm() {
+  formData = {};
+  // Clear text/number inputs
+  document.querySelectorAll('input[type="text"], input[type="number"]').forEach(el => {
+    if (el.id !== 'f_visit_date') el.value = '';
+  });
+  // Clear selects
+  document.querySelectorAll('select').forEach(el => el.selectedIndex = 0);
+  // Clear textareas
+  document.querySelectorAll('textarea').forEach(el => el.value = '');
+  // Clear checkbox inputs (actual DOM state)
+  document.querySelectorAll('input[type="checkbox"]').forEach(el => { el.checked = false; });
+  // Clear radio inputs (actual DOM state)
+  document.querySelectorAll('input[type="radio"]').forEach(el => { el.checked = false; });
+  // Clear pill visual states
+  document.querySelectorAll('.check-pill.checked, .check-pill.checked-accent').forEach(el => {
+    el.classList.remove('checked', 'checked-accent');
+  });
+  document.querySelectorAll('.radio-pill.selected').forEach(el => el.classList.remove('selected'));
+  // Clear other-specify boxes
+  document.querySelectorAll('.other-specify.show').forEach(el => el.classList.remove('show'));
+  // Collapse all PE accordion sections
+  document.querySelectorAll('.pe-accordion.open').forEach(a => {
+    a.classList.remove('open');
+    const hdr = a.querySelector('.pe-accordion-header');
+    if (hdr) hdr.setAttribute('aria-expanded', 'false');
+  });
+  // Clear vital status indicators
+  document.querySelectorAll('.vital-status').forEach(el => { el.textContent = ''; el.className = 'vital-status'; });
+  // Clear warnings
+  document.getElementById('warnings-box').innerHTML = '';
+  document.getElementById('warnings-results').innerHTML = '';
+  setDate();
+  updatePatientBadge();
+  document.getElementById('results-panel').innerHTML = '';
+  document.getElementById('results-panel').classList.remove('visible');
+  // Clear autosave
+  try { localStorage.removeItem('joyvet_autosave'); } catch(e) {}
+}
+
+// ── PROGRESS BAR ──────────────────────────────────────────────────────────
+function updateProgressBar(active) {
+  for (let i = 0; i <= 4; i++) {
+    const el = document.getElementById('prog-' + i);
+    el.classList.remove('active', 'done');
+    if (i < active) el.classList.add('done');
+    else if (i === active) el.classList.add('active');
+  }
+  for (let i = 0; i < 4; i++) {
+    const el = document.getElementById('conn-' + i);
+    el.classList.remove('done');
+    if (i < active) el.classList.add('done');
+  }
+}
+
+function updateSidebarNav(step) {
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const ids = ['nav-step0','nav-step1','nav-step2','nav-step3','nav-step4'];
+  if (ids[step]) document.getElementById(ids[step]).classList.add('active');
+}
+
+// ── PATIENT BADGE ──────────────────────────────────────────────────────────
+const SPECIES_ICONS = { dog:'🐕', cat:'🐈', rabbit:'🐇', bird:'🦜', exotic:'🐾', other:'🐾' };
+
+function updatePatientBadge() {
+  const name = document.getElementById('f_patient_name').value || 'No Active Case';
+  const species = document.getElementById('f_species').value || 'dog';
+  const breed = document.getElementById('f_breed').value;
+  const age_y = document.getElementById('f_age_years').value;
+  const age_m = document.getElementById('f_age_months').value;
+  const sex = document.getElementById('f_sex').value;
+  const weight = document.getElementById('f_weight').value;
+
+  let age = '';
+  if (age_y) age += age_y + 'y';
+  if (age_m) age += (age ? ' ' : '') + age_m + 'm';
+
+  let meta = [];
+  if (breed) meta.push(breed);
+  if (age) meta.push(age);
+  if (sex) meta.push(sex.replace('_', ' '));
+  if (weight) meta.push(weight + ' kg');
+
+  document.getElementById('topbar-species-icon').textContent = SPECIES_ICONS[species] || '🐾';
+  document.getElementById('topbar-patient-name').textContent = name;
+  document.getElementById('topbar-patient-meta').textContent = meta.join(' · ') || 'Enter patient details';
+  document.getElementById('sidebar-patient-name').textContent = name !== 'No Active Case' ? name + ' (' + species + ')' : 'No active case';
+}
+
+// ── VALIDATION ─────────────────────────────────────────────────────────────
+function validatePatient() {
+  const name = document.getElementById('f_patient_name').value.trim();
+  if (!name) {
+    alert('Please enter a patient name to continue.');
+    document.getElementById('f_patient_name').focus();
+    return false;
+  }
+  return true;
+}
+
+// ── FORM BUILDER HELPERS ───────────────────────────────────────────────────
+function makeCheckGroup(containerId, options, keyPrefix) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  container.innerHTML = '';
+  options.forEach((opt, i) => {
+    const pill = document.createElement('label');
+    pill.className = 'check-pill';
+    const isOther = opt.toLowerCase().startsWith('other');
+    const key = keyPrefix + '_' + opt.toLowerCase().replace(/[^a-z0-9]/g, '_');
+    pill.innerHTML = `<input type="checkbox" value="${key}" onchange="onCheckChange(this,'${containerId}','${keyPrefix}')"><span>${opt}</span>`;
+    if (isOther) {
+      pill.dataset.other = 'true';
+    }
+    container.appendChild(pill);
+    // Sync click — e.preventDefault() stops the browser's native label toggle
+    // which would double-fire and cancel the selection visually
+    pill.addEventListener('click', function(e) {
+      if (e.target.tagName === 'INPUT') return;
+      e.preventDefault();
+      const cb = this.querySelector('input');
+      cb.checked = !cb.checked;
+      cb.dispatchEvent(new Event('change'));
+    });
+    pill.addEventListener('touchend', function(e) {
+      if (e.target.tagName === 'INPUT') return;
+      e.preventDefault();
+      const cb = this.querySelector('input');
+      cb.checked = !cb.checked;
+      cb.dispatchEvent(new Event('change'));
+    }, { passive: false });
+  });
+}
+
+function makeRadioGroup(containerId, options, keyPrefix) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  container.innerHTML = '';
+  options.forEach(opt => {
+    const pill = document.createElement('label');
+    pill.className = 'radio-pill';
+    const key = keyPrefix + '_' + opt.toLowerCase().replace(/[^a-z0-9]/g, '_');
+    pill.innerHTML = `<input type="radio" name="${keyPrefix}" value="${key}" onchange="onRadioChange(this)"><span>${opt}</span>`;
+    container.appendChild(pill);
+    pill.addEventListener('click', function(e) {
+      if (e.target.tagName === 'INPUT') return;
+      e.preventDefault();
+      const rb = this.querySelector('input');
+      rb.checked = true;
+      rb.dispatchEvent(new Event('change'));
+    });
+    pill.addEventListener('touchend', function(e) {
+      if (e.target.tagName === 'INPUT') return;
+      e.preventDefault();
+      const rb = this.querySelector('input');
+      rb.checked = true;
+      rb.dispatchEvent(new Event('change'));
+    }, { passive: false });
+  });
+}
+
+function onCheckChange(cb, groupId, prefix) {
+  const pill = cb.closest('.check-pill');
+  if (cb.checked) {
+    pill.classList.add('checked');
+    formData[cb.value] = true;
+    // Show other specify
+    if (pill.dataset.other) {
+      const specifyEl = document.getElementById(groupId.replace('-group', '-other-specify'));
+      if (specifyEl) specifyEl.classList.add('show');
+    }
+  } else {
+    pill.classList.remove('checked');
+    delete formData[cb.value];
+    if (pill.dataset.other) {
+      const specifyEl = document.getElementById(groupId.replace('-group', '-other-specify'));
+      if (specifyEl) specifyEl.classList.remove('show');
+    }
+  }
+}
+
+function onRadioChange(rb) {
+  // Unselect previous in group
+  document.querySelectorAll(`input[name="${rb.name}"]`).forEach(r => {
+    r.closest('.radio-pill').classList.remove('selected');
+    delete formData[r.value];
+  });
+  rb.closest('.radio-pill').classList.add('selected');
+  formData[rb.value] = true;
+}
+
+// ── ANAMNESIS FORM BUILD (accordion — same group IDs/keys as before) ─────────
+function buildAnamnesisForms() {
+  const body = document.getElementById('anamnesis-body');
+  if (!body) return;
+  body.innerHTML = '';
+
+  // Each section: title, id, array of field definitions
+  // field: { label, groupId, type:'radio'|'check', options:[], keyPrefix, name? }
+  const sections = [
+    {
+      title: '1. Main Complaint',
+      id: 'complaint',
+      fields: [
+        { label: 'Chief Complaint — select all that apply', groupId: 'complaints-group', type: 'check', keyPrefix: 'complaints',
+          options: ['Vomiting','Diarrhea','Lethargy','Anorexia','Weight loss','Weight gain',
+            'Coughing','Sneezing','Dyspnea','Polydipsia/Polyuria','Skin lesions',
+            'Hair loss','Limping/Lameness','Seizures','Collapse','Bleeding',
+            'Eye discharge','Ear problems','Nasal discharge','Abdominal distension',
+            'Dysuria/Hematuria','Reproductive issues','Behavioral changes',
+            'Trauma/Injury','Swelling/Mass','Suspected toxin ingestion','Other (specify)'] }
+      ]
+    },
+    {
+      title: '2. History of Present Illness',
+      id: 'hpi',
+      fields: [
+        { label: 'Onset', groupId: 'hpi-onset-group', type: 'radio', keyPrefix: 'hpi_onset', name: 'hpi_onset',
+          options: ['Sudden (<24h)','Subacute (1–7 days)','Chronic (>7 days)'] },
+        { label: 'Duration', groupId: 'hpi-duration-group', type: 'radio', keyPrefix: 'hpi_duration', name: 'hpi_duration',
+          options: ['<1 day','1–3 days','4–7 days','1–2 weeks','2–4 weeks','>1 month'] },
+        { label: 'Progression', groupId: 'hpi-progression-group', type: 'radio', keyPrefix: 'hpi_progression', name: 'hpi_progression',
+          options: ['Improving','Stable','Worsening','Fluctuating'] },
+        { label: 'Previous Treatment', groupId: 'hpi-treatment-group', type: 'radio', keyPrefix: 'hpi_treatment', name: 'hpi_treatment',
+          options: ['None','Prescribed medication','OTC medication','Dietary change','Home remedy','Referred'] }
+      ]
+    },
+    {
+      title: '3. Medical History',
+      id: 'medhistory',
+      fields: [
+        { label: 'Previous Illness', groupId: 'med-history-group', type: 'check', keyPrefix: 'med_history',
+          options: ['None','Skin disease','GI disease','Respiratory disease','Cardiac disease',
+            'Renal disease','Hepatic disease','Endocrine disease','Neurological disease',
+            'Neoplasia','Trauma','Infectious disease','Other'] },
+        { label: 'Chronic Conditions', groupId: 'chronic-group', type: 'check', keyPrefix: 'chronic_condition',
+          options: ['None','Diabetes','Hypothyroidism','Hyperthyroidism','Heart disease',
+            'Renal disease','Allergies','Epilepsy','Arthritis','IBD','Other'] },
+        { label: 'Previous Surgeries', groupId: 'surgery-group', type: 'radio', keyPrefix: 'surgery', name: 'surgery',
+          options: ['None','Previous surgery','Unknown'] }
+      ]
+    },
+    {
+      title: '4. Current Medications & Vaccination',
+      id: 'medications',
+      fields: [
+        { label: 'Current Medications / Supplements', groupId: 'medications-group', type: 'check', keyPrefix: 'medication',
+          options: ['None','Antibiotics','Antiparasitics','NSAIDs','Corticosteroids',
+            'Immunosuppressants','Cardiac medication','Thyroid medication',
+            'Insulin','Supplements/Vitamins','Topical medication','Other'] },
+        { label: 'Vaccination Status', groupId: 'vaccine-group', type: 'radio', keyPrefix: 'vaccine', name: 'vaccine',
+          options: ['Up to date','Overdue','Unknown','Never vaccinated','Partial'] }
+      ]
+    },
+    {
+      title: '5. Environmental History',
+      id: 'environment',
+      fields: [
+        { label: 'Housing / Lifestyle', groupId: 'env-indoor-group', type: 'radio', keyPrefix: 'env', name: 'env',
+          options: ['Strictly indoor','Mostly indoor','Mostly outdoor','Strictly outdoor','Indoor+Outdoor'] },
+        { label: 'Diet', groupId: 'env-diet-group', type: 'radio', keyPrefix: 'env_diet', name: 'env_diet',
+          options: ['Commercial dry','Commercial wet','Raw diet','Home-cooked','Mixed','Unknown'] },
+        { label: 'Exposure / Travel History', groupId: 'env-exposure-group', type: 'check', keyPrefix: 'env_contact',
+          options: ['No exposure','Contact with other pets','Contact with stray animals',
+            'Recent travel','Kennel/boarding','New pet in household'] }
+      ]
+    }
+  ];
+
+  sections.forEach(sec => {
+    const accordion = document.createElement('div');
+    accordion.className = 'pe-accordion';
+    accordion.id = 'ana-sec-' + sec.id;
+
+    const header = document.createElement('div');
+    header.className = 'pe-accordion-header';
+    header.setAttribute('role', 'button');
+    header.setAttribute('aria-expanded', 'false');
+    header.innerHTML = `
+      <span class="pe-accordion-title">${sec.title}</span>
+      <span class="pe-accordion-right">
+        <button class="btn-quick-normal" onclick="event.stopPropagation();quickNormalAnaSection('${sec.id}')">⚡ Normal</button>
+        <span class="pe-accordion-chevron">▶</span>
+      </span>`;
+
+    const bodyWrap = document.createElement('div');
+    bodyWrap.className = 'pe-accordion-body';
+
+    const inner = document.createElement('div');
+    inner.className = 'pe-accordion-inner';
+
+    sec.fields.forEach(field => {
+      const fg = document.createElement('div');
+      fg.className = 'field-group';
+      fg.dataset.anaSectionId = sec.id;
+
+      const lbl = document.createElement('label');
+      lbl.className = 'field-label';
+      lbl.textContent = field.label;
+      fg.appendChild(lbl);
+
+      const group = document.createElement('div');
+      group.className = field.type === 'radio' ? 'radio-group' : 'check-group';
+      group.id = field.groupId;
+
+      field.options.forEach(opt => {
+        const pill = document.createElement('label');
+        pill.className = field.type === 'radio' ? 'radio-pill' : 'check-pill';
+        const key = field.keyPrefix + '_' + opt.toLowerCase().replace(/[^a-z0-9]/g, '_');
+        const inputName = field.name || field.keyPrefix;
+        if (field.type === 'radio') {
+          pill.innerHTML = `<input type="radio" name="${inputName}" value="${key}"><span>${opt}</span>`;
+        } else {
+          const isOther = opt.toLowerCase().startsWith('other');
+          pill.innerHTML = `<input type="checkbox" value="${key}"><span>${opt}</span>`;
+          if (isOther) pill.dataset.other = 'true';
+        }
+        group.appendChild(pill);
+
+        function handleAna(e) {
+          e.preventDefault();
+          if (field.type === 'radio') {
+            const rb = pill.querySelector('input');
+            rb.checked = true;
+            onRadioChange(rb);
+          } else {
+            const cb = pill.querySelector('input');
+            cb.checked = !cb.checked;
+            onCheckChange(cb, field.groupId, field.keyPrefix);
+          }
+        }
+        pill.addEventListener('click', function(e) { if (e.target.tagName === 'INPUT') return; handleAna(e); });
+        pill.addEventListener('touchend', function(e) { if (e.target.tagName === 'INPUT') return; handleAna(e); }, { passive: false });
+
+        const inp = pill.querySelector('input');
+        if (field.type === 'radio') {
+          inp.addEventListener('change', function() { onRadioChange(this); });
+        } else {
+          inp.addEventListener('change', function() { onCheckChange(this, field.groupId, field.keyPrefix); });
+        }
+      });
+
+      fg.appendChild(group);
+
+      // Other-specify box for complaints
+      if (field.groupId === 'complaints-group') {
+        const os = document.createElement('div');
+        os.className = 'other-specify';
+        os.id = 'complaints-other-specify';
+        os.innerHTML = `<label class="field-label" style="white-space:nowrap;">Specify:</label><input type="text" id="complaints_other_text" placeholder="Describe complaint">`;
+        fg.appendChild(os);
+      }
+
+      inner.appendChild(fg);
+    });
+
+    bodyWrap.appendChild(inner);
+    accordion.appendChild(header);
+    accordion.appendChild(bodyWrap);
+    body.appendChild(accordion);
+
+    function toggleAna() {
+      const isOpen = accordion.classList.contains('open');
+      accordion.classList.toggle('open', !isOpen);
+      header.setAttribute('aria-expanded', String(!isOpen));
+    }
+    header.addEventListener('click', function(e) { if (e.target.closest('button')) return; toggleAna(); });
+    header.addEventListener('touchend', function(e) { if (e.target.closest('button')) return; e.preventDefault(); toggleAna(); }, { passive: false });
+  });
+}
+
+function quickNormalAnaSection(secId) {
+  const acc = document.getElementById('ana-sec-' + secId);
+  if (acc && !acc.classList.contains('open')) {
+    acc.classList.add('open');
+    acc.querySelector('.pe-accordion-header').setAttribute('aria-expanded','true');
+  }
+  // Select first radio, or "None"/"No exposure" check pill in this section
+  const fieldGroups = document.querySelectorAll(`[data-ana-section-id="${secId}"]`);
+  fieldGroups.forEach(fg => {
+    const firstRadio = fg.querySelector('.radio-group .radio-pill:first-child input');
+    if (firstRadio && !firstRadio.checked) { firstRadio.checked = true; firstRadio.dispatchEvent(new Event('change')); }
+    const noneOrNoExp = Array.from(fg.querySelectorAll('.check-pill')).find(p => {
+      const t = p.textContent.trim();
+      return t === 'None' || t === 'No exposure';
+    });
+    if (noneOrNoExp) {
+      const cb = noneOrNoExp.querySelector('input');
+      if (!cb.checked) { cb.checked = true; cb.dispatchEvent(new Event('change')); }
+    }
+  });
+}
+
+// ── PHYSICAL EXAM FORM BUILD ───────────────────────────────────────────────
+function buildPhysicalExamForm() {
+  const body = document.getElementById('pe-body');
+  body.innerHTML = '';
+
+  const sections = [
+    {
+      title: '1. General Appearance',
+      id: 'gen',
+      fields: [
+        { label: 'Attitude / Mentation', id: 'attitude', type: 'radio', options: ['BAR','QAR','Dull/Depressed','Obtunded','Stuporous','Comatose'], key: 'attitude' },
+        { label: 'Body Condition Score (BCS)', id: 'bcs', type: 'radio', options: ['1/9 Emaciated','2/9','3/9','4/9','5/9 Ideal','6/9','7/9','8/9','9/9 Obese'], key: 'bcs' },
+        { label: 'Hydration Status', id: 'hydration', type: 'radio', options: ['Normal (<5%)','Mild (5–6%)','Moderate (7–8%)','Severe (>9%)'], key: 'hydration' },
+        { label: 'Gait / Mobility', id: 'gait', type: 'radio', options: ['Normal','Mild lameness','Moderate lameness','Non-weight bearing','Ataxia','Paralysis','Reluctant'], key: 'gait' },
+      ]
+    },
+    {
+      title: '2. Head & Neck',
+      id: 'head',
+      fields: [
+        { label: 'Eyes', id: 'eyes', type: 'check', options: ['Normal','Ocular discharge (serous)','Ocular discharge (mucopurulent)','Conjunctival hyperemia','Corneal opacity/ulcer','Anisocoria','Third eyelid prolapse','Cataracts','Enophthalmos','Exophthalmos'], key: 'eyes' },
+        { label: 'Ears', id: 'ears', type: 'check', options: ['Normal','Erythema','Discharge (brown)','Discharge (yellow/green)','Odor','Pruritus','Head shaking','Aural hematoma','Stenosis','Mass/polyp'], key: 'ears' },
+        { label: 'Nose', id: 'nose', type: 'check', options: ['Normal','Serous discharge','Mucopurulent discharge','Epistaxis','Depigmentation','Crusting','Ulceration'], key: 'nose' },
+        { label: 'Oral Cavity / Teeth', id: 'oral', type: 'check', options: ['Normal','Dental calculus (mild)','Dental calculus (severe)','Gingivitis','Periodontitis','Stomatitis','Ulceration','Mass/growth','Tooth fracture','Halitosis','Ptyalism'], key: 'oral' },
+        { label: 'Lymph Nodes (Submandibular/Cervical)', id: 'lymph', type: 'radio', options: ['Normal','Mild enlargement','Moderate enlargement','Severe enlargement','Painful','Non-painful'], key: 'lymph' },
+      ]
+    },
+    {
+      title: '3. Thorax',
+      id: 'thorax',
+      fields: [
+        { label: 'Cardiac Auscultation', id: 'cardiac', type: 'radio', options: ['Normal sinus rhythm','Tachycardia','Bradycardia','Arrhythmia','Murmur Grade I–II','Murmur Grade III–IV','Murmur Grade V–VI','Muffled heart sounds','Gallop rhythm'], key: 'cardiac' },
+        { label: 'Respiratory Auscultation', id: 'resp', type: 'check', options: ['Normal','Increased bronchovesicular','Crackles (fine)','Crackles (coarse)','Wheezes','Pleural friction rub','Muffled lung sounds','Absent lung sounds'], key: 'resp' },
+        { label: 'Chest Movement', id: 'chest', type: 'check', options: ['Normal','Restrictive pattern','Paradoxical movement','Open-mouth breathing','Use of accessory muscles','Asymmetric excursion'], key: 'chest' },
+      ]
+    },
+    {
+      title: '4. Abdomen',
+      id: 'abdomen',
+      fields: [
+        { label: 'Palpation', id: 'abdomen_palp', type: 'radio', options: ['Normal','Mild pain','Moderate pain','Severe pain/guarding','Tense abdomen','Fluid wave (ascites)','Diffuse distension','Cranial mass palpable','Caudal mass palpable'], key: 'abdomen' },
+        { label: 'Organ Palpation', id: 'organs', type: 'check', options: ['Normal','Hepatomegaly','Splenomegaly','Renomegaly','Small kidneys','Irregular kidney','Intestinal thickening','Mesenteric lymphadenopathy','Bladder distension','Uterine enlargement'], key: 'organs' },
+      ]
+    },
+    {
+      title: '5. Urogenital',
+      id: 'uro',
+      fields: [
+        { label: 'External Genitalia', id: 'genitalia', type: 'check', options: ['Normal','Vulvar discharge (clear)','Vulvar discharge (mucopurulent)','Vulvar discharge (bloody)','Prepuce discharge','Testicular enlargement','Cryptorchidism','Penile mass','Perineal hernia','Perianal mass'], key: 'genitalia' },
+        { label: 'Mammary Glands', id: 'mammary', type: 'check', options: ['Normal','Enlargement (uniform)','Mass (single)','Mass (multiple)','Galactorrhea','Mastitis signs','Ulceration','Hyperemia'], key: 'mammary' },
+      ]
+    },
+    {
+      title: '6. Musculoskeletal',
+      id: 'msk',
+      fields: [
+        { label: 'Limbs / Joints', id: 'limbs', type: 'check', options: ['Normal','Joint swelling','Joint pain on palpation','Crepitus','Reduced ROM','Muscle atrophy','Deformity','Fracture suspected','Nail/claw abnormality'], key: 'limbs' },
+        { label: 'Posture', id: 'posture', type: 'radio', options: ['Normal','Kyphosis','Lordosis','Head tilt','Wide-based stance','Low head carriage','Hunched'], key: 'posture' },
+      ]
+    },
+    {
+      title: '7. Nervous System',
+      id: 'neuro',
+      fields: [
+        { label: 'Reflexes', id: 'reflexes', type: 'radio', options: ['Normal','Hyperreflexia','Hyporeflexia','Areflexia','Crossed extensor','Abnormal cranial nerve findings'], key: 'neuro_reflexes' },
+        { label: 'Mentation / Neuro Signs', id: 'neuro_signs', type: 'check', options: ['Normal','Disoriented','Circling','Head pressing','Nystagmus','Seizure activity','Stupor','Coma'], key: 'neuro' },
+      ]
+    },
+    {
+      title: '8. Integumentary',
+      id: 'skin',
+      fields: [
+        { label: 'Skin / Coat Condition', id: 'skin_coat', type: 'check', options: ['Normal','Dry/Scaly','Oily/Seborrheic','Alopecia (focal)','Alopecia (diffuse/symmetric)','Pruritus','Erythema','Papules','Pustules','Vesicles','Crusts','Hyperpigmentation','Lichenification','Thickened skin','Poor coat quality'], key: 'skin' },
+        { label: 'Parasites / Wounds / Lesions', id: 'parasites', type: 'check', options: ['None','Fleas visible','Tick attached','Mites suspected','Lacerations','Puncture wounds','Burns','Contusions','Abscess','Ulcerated lesion','Neoplastic-looking mass','Post-surgical wound'], key: 'parasites' },
+      ]
+    },
+  ];
+
+  sections.forEach(sec => {
+    // ── accordion wrapper
+    const accordion = document.createElement('div');
+    accordion.className = 'pe-accordion';
+    accordion.id = 'pe-sec-' + sec.id;
+
+    // ── header (always visible, clickable)
+    const header = document.createElement('div');
+    header.className = 'pe-accordion-header';
+    header.setAttribute('role', 'button');
+    header.setAttribute('aria-expanded', 'false');
+    header.innerHTML = `
+      <span class="pe-accordion-title">${sec.title}</span>
+      <span class="pe-accordion-right">
+        <button class="btn-quick-normal" onclick="event.stopPropagation();quickNormalSection('${sec.id}')">⚡ Normal</button>
+        <span class="pe-accordion-chevron">▶</span>
+      </span>`;
+
+    // ── body (collapsed by default)
+    const bodyWrap = document.createElement('div');
+    bodyWrap.className = 'pe-accordion-body';
+
+    const inner = document.createElement('div');
+    inner.className = 'pe-accordion-inner';
+
+    // ── fields rendered inside body
+    sec.fields.forEach(field => {
+      const fg = document.createElement('div');
+      fg.className = 'field-group';
+      fg.dataset.sectionId = sec.id;
+      fg.dataset.fieldId = field.id;
+
+      const lbl = document.createElement('label');
+      lbl.className = 'field-label';
+      lbl.textContent = field.label;
+      fg.appendChild(lbl);
+
+      const group = document.createElement('div');
+      group.className = field.type === 'radio' ? 'radio-group' : 'check-group';
+      group.id = 'pe-' + field.id + '-group';
+
+      field.options.forEach(opt => {
+        const pill = document.createElement('label');
+        pill.className = field.type === 'radio' ? 'radio-pill' : 'check-pill';
+        const key = field.key + '_' + opt.toLowerCase().replace(/[^a-z0-9]/g, '_');
+        if (field.type === 'radio') {
+          pill.innerHTML = `<input type="radio" name="pe_${field.id}" value="${key}"><span>${opt}</span>`;
+        } else {
+          pill.innerHTML = `<input type="checkbox" value="${key}"><span>${opt}</span>`;
+        }
+        group.appendChild(pill);
+
+        // Unified click + touch handler
+        function handlePillActivation(e) {
+          e.preventDefault();
+          if (field.type === 'radio') {
+            const rb = pill.querySelector('input');
+            rb.checked = true;
+            onRadioChange(rb);
+          } else {
+            const cb = pill.querySelector('input');
+            cb.checked = !cb.checked;
+            onCheckChange(cb, 'pe-' + field.id + '-group', field.key);
+          }
+        }
+        pill.addEventListener('click', function(e) {
+          if (e.target.tagName === 'INPUT') return;
+          handlePillActivation(e);
+        });
+        pill.addEventListener('touchend', function(e) {
+          if (e.target.tagName === 'INPUT') return;
+          handlePillActivation(e);
+        }, { passive: false });
+
+        // Also wire the native input change (for keyboard)
+        const input = pill.querySelector('input');
+        if (field.type === 'radio') {
+          input.addEventListener('change', function() { onRadioChange(this); });
+        } else {
+          input.addEventListener('change', function() { onCheckChange(this, 'pe-' + field.id + '-group', field.key); });
+        }
+      });
+
+      fg.appendChild(group);
+      inner.appendChild(fg);
+    });
+
+    bodyWrap.appendChild(inner);
+    accordion.appendChild(header);
+    accordion.appendChild(bodyWrap);
+    body.appendChild(accordion);
+
+    // ── toggle expand/collapse
+    function toggleAccordion(e) {
+      const isOpen = accordion.classList.contains('open');
+      // Close all other sections for focus-first UX
+      body.querySelectorAll('.pe-accordion.open').forEach(a => {
+        if (a !== accordion) {
+          a.classList.remove('open');
+          a.querySelector('.pe-accordion-header').setAttribute('aria-expanded', 'false');
+        }
+      });
+      accordion.classList.toggle('open', !isOpen);
+      header.setAttribute('aria-expanded', String(!isOpen));
+    }
+
+    header.addEventListener('click', toggleAccordion);
+    header.addEventListener('touchend', function(e) {
+      // Only toggle if the touch wasn't on a button inside the header
+      if (e.target.closest('button')) return;
+      e.preventDefault();
+      toggleAccordion(e);
+    }, { passive: false });
+  });
+}
+
+// ── VITALS FORM BUILD ──────────────────────────────────────────────────────
+function buildVitalsForm() {
+  const body = document.getElementById('vitals-body');
+  const vitals = [
+    { label: 'Temperature', id: 'temperature', unit: '°C', key: 'temperature' },
+    { label: 'Heart Rate', id: 'heart_rate', unit: 'bpm', key: 'heart_rate' },
+    { label: 'Respiratory Rate', id: 'resp_rate', unit: 'breaths/min', key: 'resp_rate' },
+  ];
+
+  vitals.forEach(v => {
+    const row = document.createElement('div');
+    row.className = 'vital-input-row';
+    row.innerHTML = `
+      <span class="vital-label">${v.label}</span>
+      <input type="number" class="vital-input" id="f_${v.id}" placeholder="—" step="0.1" oninput="onVitalInput('${v.id}','${v.key}')">
+      <span class="vital-unit">${v.unit}</span>
+      <span class="vital-status" id="vstatus-${v.id}"></span>
+    `;
+    body.appendChild(row);
+  });
+
+  makeRadioGroup('crt-group', ['<2 sec (Normal)','2–3 sec','> 3 sec'], 'crt');
+  makeRadioGroup('mm-group', ['Pink/Moist (Normal)','Pale','White','Cyanotic','Icteric','Brick red','Tacky/Dry'], 'mm');
+}
+
+function onVitalInput(id, key) {
+  const val = parseFloat(document.getElementById('f_' + id).value);
+  formData[key] = isNaN(val) ? null : val;
+
+  const species = document.getElementById('f_species').value || 'dog';
+  const ref = JOYVET_KB.vitals_reference[species];
+  const statusEl = document.getElementById('vstatus-' + id);
+  if (!ref || isNaN(val) || !statusEl) return;
+
+  let refKey = id === 'temperature' ? 'temp' : id === 'heart_rate' ? 'hr' : 'rr';
+  const r = ref[refKey];
+  if (!r) return;
+
+  statusEl.className = 'vital-status';
+  if (val < r.low) { statusEl.textContent = '▼ Low'; statusEl.classList.add('low'); formData[refKey + '_low'] = true; delete formData[refKey + '_high']; }
+  else if (val > r.high) { statusEl.textContent = '▲ High'; statusEl.classList.add('high'); formData[refKey + '_high'] = true; delete formData[refKey + '_low']; }
+  else { statusEl.textContent = '✓ Normal'; statusEl.classList.add('normal'); delete formData[refKey + '_low']; delete formData[refKey + '_high']; }
+}
+
+// ── QUICK NORMAL ───────────────────────────────────────────────────────────
+function quickNormalAnamnesis() {
+  ['complaint','hpi','medhistory','medications','environment'].forEach(quickNormalAnaSection);
+}
+
+function quickNormalExam() {
+  // Expand all accordion sections so user can verify selections
+  document.querySelectorAll('.pe-accordion').forEach(a => {
+    a.classList.add('open');
+    const hdr = a.querySelector('.pe-accordion-header');
+    if (hdr) hdr.setAttribute('aria-expanded', 'true');
+  });
+  document.querySelectorAll('[id^="pe-"][id$="-group"]').forEach(grp => {
+    const firstPill = grp.querySelector('.radio-pill, .check-pill');
+    if (!firstPill) return;
+    const input = firstPill.querySelector('input');
+    if (!input) return;
+    if (input.type === 'radio') {
+      const firstOpt = grp.querySelector('.radio-pill:first-child input');
+      if (firstOpt) { firstOpt.checked = true; firstOpt.dispatchEvent(new Event('change')); }
+    } else {
+      // For check groups, select "Normal" if available
+      const normalPill = Array.from(grp.querySelectorAll('.check-pill')).find(p => p.textContent.trim() === 'Normal');
+      if (normalPill) {
+        const cb = normalPill.querySelector('input');
+        if (!cb.checked) { cb.checked = true; cb.dispatchEvent(new Event('change')); }
+      }
+    }
+  });
+  // Set attitude to BAR
+  const attRadios = document.querySelectorAll('[name="pe_attitude"]');
+  if (attRadios[0]) { attRadios[0].checked = true; attRadios[0].dispatchEvent(new Event('change')); }
+  // BCS to 5/9
+  const bcsRadios = document.querySelectorAll('[name="pe_bcs"]');
+  if (bcsRadios[4]) { bcsRadios[4].checked = true; bcsRadios[4].dispatchEvent(new Event('change')); }
+  // Hydration normal
+  const hydRadios = document.querySelectorAll('[name="pe_hydration"]');
+  if (hydRadios[0]) { hydRadios[0].checked = true; hydRadios[0].dispatchEvent(new Event('change')); }
+  // Gait normal
+  const gaitRadios = document.querySelectorAll('[name="pe_gait"]');
+  if (gaitRadios[0]) { gaitRadios[0].checked = true; gaitRadios[0].dispatchEvent(new Event('change')); }
+}
+
+function quickNormalSection(secId) {
+  // Expand the section so the user can see the selections
+  const accordion = document.getElementById('pe-sec-' + secId);
+  if (accordion && !accordion.classList.contains('open')) {
+    accordion.classList.add('open');
+    const hdr = accordion.querySelector('.pe-accordion-header');
+    if (hdr) hdr.setAttribute('aria-expanded', 'true');
+  }
+  document.querySelectorAll('[id^="pe-"][id$="-group"]').forEach(grp => {
+    const fg = grp.closest('.field-group');
+    if (!fg || fg.dataset.sectionId !== secId) return;
+    const firstRadio = grp.querySelector('.radio-pill:first-child input');
+    if (firstRadio) { firstRadio.checked = true; firstRadio.dispatchEvent(new Event('change')); }
+    const normalPill = Array.from(grp.querySelectorAll('.check-pill')).find(p => p.textContent.trim() === 'Normal' || p.textContent.trim() === 'None');
+    if (normalPill) {
+      const cb = normalPill.querySelector('input');
+      if (!cb.checked) { cb.checked = true; cb.dispatchEvent(new Event('change')); }
+    }
+  });
+}
+
+// ── SPECIES CHANGE ─────────────────────────────────────────────────────────
+function onSpeciesChange() {
+  updatePatientBadge();
+}
+
+// ── COLLECT FORM DATA ──────────────────────────────────────────────────────
+function collectFormData() {
+  const species = document.getElementById('f_species').value;
+  const sex = document.getElementById('f_sex').value;
+  const age_y = parseInt(document.getElementById('f_age_years').value) || 0;
+  const age_m = parseInt(document.getElementById('f_age_months').value) || 0;
+  const weight = parseFloat(document.getElementById('f_weight').value) || 0;
+
+  // Species keys
+  formData.species = species;
+  formData['species_' + species] = true;
+
+  // Sex keys
+  formData.sex = sex;
+  formData['sex_' + sex] = true;
+
+  // Age category
+  const totalMonths = age_y * 12 + age_m;
+  if (totalMonths < 12) formData.age_kitten = formData.age_puppy = formData.age_young = true;
+  else if (totalMonths < 24) formData.age_young = true;
+  else if (totalMonths < 84) formData.age_middle = true;
+  else formData.age_old = true;
+
+  // Weight category
+  if (weight > 0) {
+    if (weight < 5) formData.weight_small = true;
+    else if (weight < 25) formData.weight_medium = true;
+    else if (weight < 45) formData.weight_large = true;
+    else formData.weight_giant = true;
+  }
+
+  // ── BREED DETECTION ────────────────────────────────────────────────────
+  // Maps breed text input → KB signal keys for breed-predisposed conditions
+  const breedRaw = (document.getElementById('f_breed').value || '').toLowerCase();
+  const BREED_MAP = {
+    breed_dachshund:         ['dachshund','dachsy','doxy','sausage'],
+    breed_labrador:          ['labrador','lab ','lab,','labs'],
+    breed_lab:               ['labrador','lab ','lab,'],
+    breed_golden:            ['golden retriever','golden','goldie'],
+    breed_german_shepherd:   ['german shepherd','gsd','alsatian','deutsches'],
+    breed_boxer:             ['boxer'],
+    breed_boston:            ['boston terrier','boston'],
+    breed_bulldog:           ['bulldog','bully','english bull','french bull','frenchie'],
+    breed_beagle:            ['beagle'],
+    breed_cocker:            ['cocker spaniel','cocker','american cocker','english cocker'],
+    breed_poodle:            ['poodle','toy poodle','mini poodle','standard poodle'],
+    breed_standard_poodle:   ['standard poodle'],
+    breed_doberman:          ['doberman','dobermann','dobe'],
+    breed_cavalier:          ['cavalier','cavalier king charles','ckcs'],
+    breed_basset:            ['basset hound','basset'],
+    breed_chihuahua:         ['chihuahua','chi ','chi,'],
+    breed_great_dane:        ['great dane'],
+    breed_bloodhound:        ['bloodhound'],
+    breed_rottweiler:        ['rottweiler','rottie','rott'],
+    breed_weimaraner:        ['weimaraner'],
+    breed_newfoundland:      ['newfoundland','newfie','newf'],
+    breed_mastiff:           ['mastiff','bullmastiff','neapolitan','tibetan mastiff'],
+    breed_saint_bernard:     ['saint bernard','st. bernard','st bernard'],
+    breed_miniature_schnauzer:['miniature schnauzer','mini schnauzer','schnauzer'],
+    breed_shih_tzu:          ['shih tzu','shih-tzu','shitzu'],
+    breed_pekingese:         ['pekingese','peke'],
+    breed_border_collie:     ['border collie'],
+    breed_belgian:           ['belgian','tervuren','malinois','groenendael'],
+    breed_persian:           ['persian'],
+    breed_himalayan:         ['himalayan'],
+    breed_siamese:           ['siamese'],
+    breed_burmese:           ['burmese'],
+    breed_maine_coon:        ['maine coon'],
+    breed_ragdoll:           ['ragdoll'],
+    breed_abyssinian:        ['abyssinian','abyssin'],
+    breed_basenji:           ['basenji'],
+    breed_lundehund:         ['lundehund'],
+    breed_pomeranian:        ['pomeranian','pom ','pom,'],
+    breed_yorkshire:         ['yorkshire terrier','yorkie','yorkshire'],
+    breed_dalmatian:         ['dalmatian','dalmatiner'],
+    breed_bichon:            ['bichon frise','bichon','bichon frisé'],
+    breed_irish_wolfhound:   ['irish wolfhound','wolfhound'],
+    breed_whippet:           ['whippet'],
+    breed_english_setter:    ['english setter','setter'],
+    breed_australian_shepherd:['australian shepherd','aussie'],
+    breed_shar_pei:          ['shar pei','shar-pei','chinese shar'],
+    breed_west_highland:     ['west highland','westie','whtw'],
+    breed_scottish_terrier:  ['scottish terrier','scottie'],
+    breed_staffordshire:     ['staffordshire','staffy','staffie','american staff','amstaff'],
+  };
+  if (breedRaw) {
+    Object.entries(BREED_MAP).forEach(([signal, keywords]) => {
+      if (keywords.some(kw => breedRaw.includes(kw))) {
+        formData[signal] = true;
+      }
+    });
+  }
+
+  // Remap compound option names to canonical signal keys used by knowledge base
+  // (Simple options like 'Vomiting' already store as complaints_vomiting — no remap needed)
+  if (formData['complaints_polydipsia_polyuria'])  { formData.complaints_polydipsia = true; formData.complaints_polyuria = true; }
+  if (formData['complaints_limping_lameness'])     formData.complaints_limping = true;
+  if (formData['complaints_dysuria_hematuria'])    { formData.complaints_dysuria = true; formData.complaints_hematuria = true; }
+  if (formData['complaints_reproductive_issues'])  { formData.complaints_vulvar_discharge = true; formData.complaints_reproductive = true; }
+  if (formData['complaints_behavioral_changes'])   formData.complaints_behavioral = true;
+  if (formData['complaints_suspected_toxin_ingestion']) formData.history_toxin_ingestion = true;
+  if (formData['complaints_trauma_injury'])        formData.complaints_trauma = true;
+  if (formData['complaints_eye_discharge'])        formData.complaints_eye_discharge = true;
+  if (formData['complaints_ear_problems'])         formData.complaints_ear_problems = true;
+
+  // HPI onset
+  if (formData['hpi_onset_sudden___24h_']) formData.hpi_onset_sudden = true;
+  if (formData['hpi_onset_subacute__1_7_days_']) formData.hpi_onset_subacute = true;
+  if (formData['hpi_onset_chronic___7_days_']) formData.hpi_onset_chronic = true;
+
+  // HPI progression
+  if (formData['hpi_progression_worsening']) formData.hpi_progression_worsening = true;
+  if (formData['hpi_progression_fluctuating']) formData.hpi_progression_fluctuating = true;
+  if (formData['hpi_progression_improving']) formData.hpi_progression_improving = true;
+
+  // Physical exam — attitude
+  if (formData['attitude_bar']) formData.attitude_bar = true;
+  if (formData['attitude_qar']) formData.attitude_qar = true;
+  if (formData['attitude_dull_depressed']) formData.attitude_dull = true;
+  if (formData['attitude_obtunded']) formData.attitude_obtunded = true;
+
+  // Skin signals
+  if (formData['skin_pruritus']) formData.skin_pruritus = true;
+  if (formData['skin_erythema']) formData.skin_erythema = true;
+  if (formData['skin_alopecia__focal_']) formData.skin_alopecia_focal = true;
+  if (formData['skin_alopecia__diffuse_symmetric_']) formData.skin_alopecia_diffuse = true;
+  if (formData['skin_papules']) formData.skin_papules = true;
+  if (formData['skin_pustules']) formData.skin_pustules = true;
+  if (formData['skin_crusts']) formData.skin_crusts = true;
+  if (formData['skin_hyperpigmentation']) formData.skin_hyperpigmentation = true;
+  if (formData['skin_lichenification']) formData.skin_lichenification = true;
+  if (formData['skin_thickened_skin']) formData.skin_thickened = true;
+  if (formData['skin_dry_scaly']) formData.skin_dry = true;
+  if (formData['skin_oily_seborrheic']) formData.skin_oily = true;
+  if (formData['skin_poor_coat_quality']) formData.skin_poor_coat = true;
+
+  // Parasites
+  if (formData['parasites_fleas_visible']) formData.parasites_fleas = true;
+  if (formData['parasites_mites_suspected']) formData.parasites_mites = true;
+  if (formData['parasites_neoplastic_looking_mass']) formData.skin_neoplastic_mass = true;
+
+  // Cardiac
+  if (formData['cardiac_tachycardia']) formData.cardiac_tachycardia = true;
+  if (formData['cardiac_murmur_grade_i_ii']) formData.cardiac_murmur_12 = true;
+  if (formData['cardiac_murmur_grade_iii_iv']) formData.cardiac_murmur_34 = true;
+  if (formData['cardiac_murmur_grade_v_vi']) formData.cardiac_murmur_56 = true;
+  if (formData['cardiac_arrhythmia']) formData.cardiac_arrhythmia = true;
+
+  // Respiratory
+  if (formData['resp_wheezes']) formData.resp_wheeze = true;
+  if (formData['resp_crackles__fine_']) formData.resp_crackles_fine = true;
+  if (formData['resp_crackles__coarse_']) formData.resp_crackles_coarse = true;
+  if (formData['resp_muffled_lung_sounds']) formData.resp_muffled = true;
+  if (formData['resp_increased_bronchovesicular']) formData.resp_increased_bv = true;
+  if (formData['chest_open_mouth_breathing']) formData.chest_open_mouth = true;
+  if (formData['chest_use_of_accessory_muscles']) formData.chest_accessory_muscles = true;
+
+  // Abdomen
+  if (formData['abdomen_severe_pain_guarding']) formData.abdomen_pain_severe = true;
+  if (formData['abdomen_moderate_pain']) formData.abdomen_pain_moderate = true;
+  if (formData['abdomen_mild_pain']) formData.abdomen_pain_mild = true;
+  if (formData['abdomen_diffuse_distension'] || formData['abdomen_tense_abdomen']) formData.abdomen_distension = true;
+  if (formData['abdomen_fluid_wave__ascites_']) formData.abdomen_fluid_wave = true;
+  if (formData['abdomen_tense_abdomen']) formData.abdomen_tense = true;
+
+  // Organs
+  if (formData['organs_hepatomegaly']) formData.liver_hepatomegaly = true;
+  if (formData['organs_splenomegaly']) formData.spleen_splenomegaly = true;
+  if (formData['organs_renomegaly']) formData.kidneys_renomegaly = true;
+  if (formData['organs_small_kidneys']) formData.kidneys_small = true;
+  if (formData['organs_irregular_kidney']) formData.kidneys_irregular = true;
+  if (formData['organs_intestinal_thickening']) formData.abdomen_intestinal_thickening = true;
+  if (formData['organs_mesenteric_lymphadenopathy']) formData.abdomen_mesenteric_lymphadenopathy = true;
+  if (formData['organs_bladder_distension']) formData.bladder_distension = true;
+  if (formData['organs_uterine_enlargement']) formData.uterus_enlargement = true;
+
+  // Lymph nodes
+  if (formData['lymph_mild_enlargement']) formData.lymph_mild = true;
+  if (formData['lymph_moderate_enlargement']) formData.lymph_moderate = true;
+  if (formData['lymph_severe_enlargement']) formData.lymph_severe = true;
+
+  // Hydration
+  if (formData['hydration_normal___5__']) formData.hydration_normal = true;
+  if (formData['hydration_mild__5_6__']) formData.hydration_mild = true;
+  if (formData['hydration_moderate__7_8__']) formData.hydration_moderate = true;
+  if (formData['hydration_severe___9__']) formData.hydration_severe = true;
+
+  // Mucous membranes
+  if (formData['mm_pale']) formData.mm_pale = true;
+  if (formData['mm_white']) formData.mm_white = true;
+  if (formData['mm_cyanotic']) formData.mm_cyanotic = true;
+  if (formData['mm_icteric']) formData.mm_icteric = true;
+  if (formData['mm_tacky_dry']) formData.mm_tacky = true;
+  if (formData['mm_brick_red']) formData.mm_brick_red = true;
+
+  // CRT
+  if (formData['crt__2_3_sec'] || formData['crt___3_sec']) formData.crt_prolonged = true;
+
+  // Vaccine
+  if (formData['vaccine_overdue']) formData.vaccine_overdue = true;
+  if (formData['vaccine_never_vaccinated']) formData.vaccine_never = true;
+  if (formData['vaccine_partial']) formData.vaccine_partial = true;
+
+  // Environment
+  if (formData['env_contact_with_stray_animals']) formData.env_contact_stray = true;
+  if (formData['env_contact_with_other_pets']) formData.env_contact_other_pets = true;
+  if (formData['env_kennel_boarding']) formData.env_kennel = true;
+  if (formData['env_new_pet_in_household']) formData.env_new_pet = true;
+  if (formData['env_mostly_outdoor'] || formData['env_strictly_outdoor']) formData.env_outdoor = true;
+
+  // Neuro
+  if (formData['neuro_nystagmus']) formData.neuro_nystagmus = true;
+  if (formData['neuro_seizure_activity']) formData.neuro_seizure = true;
+  if (formData['neuro_circling']) formData.neuro_circling = true;
+  if (formData['neuro_disoriented']) formData.neuro_disoriented = true;
+  if (formData['neuro_reflexes_hyperreflexia']) formData.neuro_reflexes_hyper = true;
+  if (formData['neuro_reflexes_hyporeflexia']) formData.neuro_reflexes_hypo = true;
+
+  // Gait
+  if (formData['gait_mild_lameness']) formData.gait_mild_lameness = true;
+  if (formData['gait_moderate_lameness']) formData.gait_moderate_lameness = true;
+  if (formData['gait_non_weight_bearing']) formData.gait_non_weight = true;
+  if (formData['gait_ataxia']) formData.gait_ataxia = true;
+  if (formData['gait_paralysis']) formData.gait_paralysis = true;
+
+  // Posture
+  if (formData['posture_head_tilt']) formData.posture_head_tilt = true;
+  if (formData['posture_kyphosis']) formData.posture_kyphosis = true;
+  if (formData['posture_wide_based_stance']) formData.posture_wide_based = true;
+  if (formData['posture_low_head_carriage']) formData.posture_low_head = true;
+
+  // Limbs
+  if (formData['limbs_joint_swelling']) formData.limbs_joint_swelling = true;
+  if (formData['limbs_joint_pain_on_palpation']) formData.limbs_joint_pain = true;
+  if (formData['limbs_crepitus']) formData.limbs_crepitus = true;
+  if (formData['limbs_reduced_rom']) formData.limbs_reduced_rom = true;
+  if (formData['limbs_muscle_atrophy']) formData.limbs_muscle_atrophy = true;
+
+  // Genitalia
+  if (formData['genitalia_vulvar_discharge__mucopurulent_']) formData.vulvar_mucopurulent = true;
+  if (formData['genitalia_vulvar_discharge__bloody_']) formData.vulvar_bloody = true;
+  if (formData['genitalia_prepuce_discharge']) formData.vulvar_prepuce_discharge = true;
+  if (formData['genitalia_perineal_hernia']) formData.perineal_hernia = true;
+
+  // Mammary
+  if (formData['mammary_mass__single_']) formData.mammary_mass_single = true;
+  if (formData['mammary_mass__multiple_']) formData.mammary_mass_multiple = true;
+  if (formData['mammary_ulceration']) formData.mammary_ulceration = true;
+
+  // Ears
+  if (formData['ears_erythema']) formData.ears_erythema = true;
+  if (formData['ears_discharge__brown_']) formData.ears_discharge_brown = true;
+  if (formData['ears_odor']) formData.ears_odor = true;
+  if (formData['ears_pruritus']) formData.ears_pruritus = true;
+
+  // Eyes
+  if (formData['eyes_ocular_discharge__mucopurulent_']) formData.eyes_discharge_mucopurulent = true;
+  if (formData['eyes_ocular_discharge__serous_']) formData.eyes_discharge_serous = true;
+  if (formData['eyes_conjunctival_hyperemia']) formData.eyes_conjunctival_hyperemia = true;
+
+  // Nose
+  if (formData['nose_serous_discharge']) formData.nose_serous_discharge = true;
+  if (formData['nose_mucopurulent_discharge']) formData.nose_mucopurulent = true;
+
+  // Chronic conditions
+  if (formData['chronic_condition_allergies']) formData.chronic_condition_allergies = true;
+  if (formData['chronic_condition_diabetes']) formData.chronic_condition_diabetes = true;
+  if (formData['chronic_condition_none']) formData.chronic_condition_none = true;
+
+  // BCS
+  if (formData['bcs_1_9_emaciated'] || formData['bcs_2_9'] || formData['bcs_3_9']) formData.bcs_thin = true;
+  if (formData['bcs_7_9'] || formData['bcs_8_9'] || formData['bcs_9_9_obese']) formData.bcs_obese = true;
+
+  // HR
+  if (formData['cardiac_tachycardia']) formData.hr_high = true;
+  if (formData['cardiac_bradycardia']) formData.hr_low = true;
+
+  // ── INFERRED / DERIVED SIGNALS ────────────────────────────────────────
+  // Cranial abdominal mass: direct selection or inferred from hepato/splenomegaly
+  if (formData['abdomen_cranial_mass_palpable']) formData.abdomen_cranial_mass = true;
+  if (formData.liver_hepatomegaly || formData.spleen_splenomegaly) formData.abdomen_cranial_mass = true;
+
+  // Abdominal pain cranial (spinal/thoracolumbar — IVDD): kyphosis + pain
+  if (formData.posture_kyphosis && formData.abdomen_pain_mild) formData.abdomen_pain_cranial = true;
+  if (formData.posture_kyphosis && formData.abdomen_pain_moderate) formData.abdomen_pain_cranial = true;
+
+  // History dietary change: mapped from previous treatment option
+  if (formData['hpi_treatment_dietary_change']) formData.history_dietary_change = true;
+
+  // Toxin ingestion: from explicit complaint or trauma/injury + sudden onset
+  if (formData['complaints_suspected_toxin_ingestion']) formData.history_toxin_ingestion = true;
+  if (formData['complaints_trauma_injury'] && formData.hpi_onset_sudden) formData.history_toxin_ingestion = true;
+  // Also trigger if user selects behavioral changes + sudden collapse + seizures
+  if (formData.complaints_collapse && formData.hpi_onset_sudden && formData.neuro_seizure) formData.history_toxin_ingestion = true;
+
+  // Permethrin: topical medication applied recently + cat species
+  if (formData['medication_topical_medication'] && species === 'cat') formData.skin_topical_applied = true;
+
+  // Recent estrus: intact female + species dog or cat (for pyometra scoring)
+  if ((formData.sex_female_intact) && (species === 'dog' || species === 'cat')) formData.hpi_recent_estrus = true;
+
+  // Cold limbs: non-weight bearing + cat + sudden onset → ATE signal
+  if (formData.gait_non_weight && species === 'cat' && formData.hpi_onset_sudden) formData.limbs_cold = true;
+
+  // Thyroid palpation: weight loss + cat + old age (hyperthyroidism)
+  if (formData.complaints_weight_loss && species === 'cat' && formData.age_old) formData.palpation_thyroid = true;
+
+  // Stress/anorexia event: cat + anorexia + hepatic lipidosis trigger
+  if (species === 'cat' && formData.complaints_anorexia && formData.bcs_obese) formData.stress_event = true;
+  if (species === 'cat' && formData.complaints_anorexia && formData.hpi_onset_subacute) formData.stress_event = true;
+
+  // Feeding large meal / post-exercise: large/giant breed dogs + GDV risk
+  if ((formData.weight_large || formData.weight_giant) && formData.complaints_abdominal_distension) {
+    formData.feeding_large_meal = true;
+    formData.feeding_post_exercise = true;
+  }
+
+  // Bloody discharge from complaints
+  if (formData['complaints_bleeding'] || formData.vulvar_bloody) formData.complaints_bloody_discharge = true;
+
+  // Vulvar enlargement: exotic female + hair loss (ferret adrenal)
+  if (species === 'exotic' && formData.complaints_hair_loss) formData.vulvar_enlargement = true;
+  if (formData['genitalia_testicular_enlargement']) formData.vulvar_enlargement = true;
+
+  // Heartworm prevention: outdoor + not up to date on prevention
+  if (formData.env_outdoor && (formData.vaccine_overdue || formData.vaccine_never)) formData.prevention_none = true;
+
+  // Neuro hyperreflexia (from PE neuro reflexes)
+  if (formData['neuro_reflexes_hyperreflexia']) formData.neuro_hyperreflexia = true;
+
+  // Ear mass (from PE ears)
+  if (formData['ears_mass_polyp']) formData.ears_mass = true;
+
+  // Endemic area: outdoor + coughing (heartworm endemic presumption)
+  if (formData.env_outdoor && formData.complaints_coughing) formData.env_endemic_area = true;
+
+  // Diet signals
+  if (formData['env_diet_commercial_dry']) formData.diet_pellet_only = true;
+  if (formData['env_diet_commercial_dry']) formData.diet_dry_food = true;
+  // If no hay in diet inferred
+  if (species === 'rabbit' && !formData['env_diet_mixed']) formData.diet_low_hay = true;
+
+  // Indoor/outdoor environment signals
+  if (formData['env_strictly_indoor'] || formData['env_mostly_indoor']) formData.env_indoor = true;
+  if (formData['env_mostly_outdoor'] || formData['env_strictly_outdoor'] || formData['env_indoor_outdoor']) formData.env_outdoor = true;
+
+  // Tick exposure (from parasites section)
+  if (formData['parasites_tick_attached']) formData.parasites_tick = true;
+
+  // Bleeding / hemorrhage complaints
+  if (formData['complaints_bleeding']) formData.complaints_bleeding = true;
+}
+
+// ── GENERATE RESULTS ───────────────────────────────────────────────────────
+function generateResults() {
+  collectFormData();
+
+  const btn = document.querySelector('#generate-btn-wrap .btn');
+  btn.innerHTML = '<span class="spinner"></span>Analyzing...';
+  btn.disabled = true;
+
+  setTimeout(() => {
+    const ranked = runDiagnosisEngine(formData);
+    const warnings = checkContradictions(formData);
+    renderResults(ranked, warnings);
+    btn.innerHTML = '⚕ Generate Clinical Assessment';
+    btn.disabled = false;
+    goToStep(4);
+    sessionCases++;
+    updateSessionStats();
+    autosaveCurrentCase();
+  }, 400);
+}
+
+function updateSessionStats() {
+  // stat-cases element removed from dashboard (vanity metrics removed)
+}
+
+// ── WEIGHT-BASED DOSING HELPER ─────────────────────────────────────────────
+function renderMedText(text, weight) {
+  if (!weight || weight <= 0) return text;
+  // Match "X–Y mg/kg" or "X-Y mg/kg" or "X mg/kg"
+  return text.replace(/([\d]+(?:[\.,]\d+)?)(?:\s*[–\-]\s*([\d]+(?:[\.,]\d+)?))?\s*mg\/kg/g, (match, lo, hi) => {
+    const low = parseFloat(lo.replace(',', '.'));
+    if (hi) {
+      const high = parseFloat(hi.replace(',', '.'));
+      const dlo = (low * weight).toFixed(1);
+      const dhi = (high * weight).toFixed(1);
+      return `${match} <span class="dose-calc">→ ${dlo}–${dhi} mg @ ${weight}kg</span>`;
+    } else {
+      const d = (low * weight).toFixed(1);
+      return `${match} <span class="dose-calc">→ ${d} mg @ ${weight}kg</span>`;
+    }
+  });
+}
+
+// ── RENDER RESULTS ─────────────────────────────────────────────────────────
+function renderResults(ranked, warnings) {
+  const patientName = document.getElementById('f_patient_name').value || 'Unknown';
+  const species = document.getElementById('f_species').value;
+  const breed = document.getElementById('f_breed').value;
+  const visitDate = document.getElementById('f_visit_date').value;
+  const ageY = document.getElementById('f_age_years').value;
+  const ageM = document.getElementById('f_age_months').value;
+  const sex = document.getElementById('f_sex').value;
+  const weightRaw = document.getElementById('f_weight').value;
+  const weight = parseFloat(weightRaw) || 0;
+
+  // Emergency banner + warnings rendered after variable declarations below
+  const warnBox = document.getElementById('warnings-results');
+  warnBox.innerHTML = '';
+  const emergencyDdx = ranked.slice(0, 3).filter(r => r.condition.emergency);
+  if (emergencyDdx.length > 0) {
+    const emgNames = emergencyDdx.map(r => r.condition.name).join(' / ');
+    const eb = document.createElement('div');
+    eb.className = 'emergency-banner';
+    eb.innerHTML = `
+      <div class="emg-icon">🚨</div>
+      <div>
+        <div class="emg-title">CRITICAL EMERGENCY — STABILIZE PATIENT IMMEDIATELY</div>
+        <div class="emg-detail">Suspected: <strong>${emgNames}</strong><br>
+        Do not delay treatment. Initiate emergency protocol, establish IV access, and notify senior clinician.</div>
+      </div>`;
+    warnBox.appendChild(eb);
+  }
+
+  // Clinical notes warnings
+  if (warnings.length > 0) {
+    const wb = document.createElement('div');
+    wb.className = 'warning-banner';
+    wb.innerHTML = '<strong>⚠ Clinical Notes:</strong><br>' + warnings.join('<br>');
+    warnBox.appendChild(wb);
+  }
+
+  const panel = document.getElementById('results-panel');
+  panel.innerHTML = '';
+  panel.classList.add('visible');
+
+  // Header
+  const header = document.createElement('div');
+  header.className = 'results-header';
+  header.innerHTML = `
+    <div>
+      <h2>⚕ CLINICAL ASSESSMENT — ${patientName.toUpperCase()}</h2>
+      <div class="results-meta">${species.toUpperCase()} · ${breed || 'Mixed'} · ${ageY || '?'}y ${ageM || '0'}m · ${sex.replace('_',' ')} · ${weightRaw || '?'} kg · ${visitDate}</div>
+    </div>
+  `;
+  panel.appendChild(header);
+
+  if (ranked.length === 0) {
+    const empty = document.createElement('div');
+    empty.style.cssText = 'padding:24px;text-align:center;color:var(--text-muted);background:white;border:1px solid var(--border);border-top:none;';
+    empty.innerHTML = '<div style="font-size:2rem;margin-bottom:10px;">🔍</div><p>No significant differential diagnoses matched the entered clinical data.<br><small>Ensure key clinical findings are selected in Physical Exam and Anamnesis.</small></p>';
+    panel.appendChild(empty);
+    return;
+  }
+
+  // Store ranked globally for click-to-update
+  window._lastRanked = ranked;
+  window._lastWeight = weight;
+
+  // ── 1. DIFFERENTIAL DIAGNOSIS (top 5, clickable) ─────────────────────────
+  const ddxSec = document.createElement('div');
+  ddxSec.className = 'result-section clinical-only-section';
+  ddxSec.id = 'result-section-1';
+  ddxSec.innerHTML = `<div class="result-section-header"><div class="result-section-title">1. 🩺 DIFFERENTIAL DIAGNOSIS</div><span style="font-size:0.76rem;color:var(--text-muted);margin-left:10px;">Top 5 ranked by clinical match — click any row to update treatment plan</span><span id="sec-arrow-1" style="color:var(--text-muted);">▲</span></div>`;
+  const ddxBody = document.createElement('div');
+  ddxBody.className = 'result-section-body open';
+  const ddxList = document.createElement('div');
+
+  ranked.forEach((r, i) => {
+    const item = document.createElement('div');
+    item.className = 'ddx-item' + (i === 0 ? ' ddx-selected' : '');
+    item.dataset.ddxIdx = i;
+    item.style.cursor = 'pointer';
+    const confClass = 'confidence-' + r.confidence.toLowerCase();
+    const emgBadge = r.condition.emergency ? `<span style="background:#fee2e2;color:#dc2626;font-size:0.68rem;font-weight:700;padding:2px 6px;border-radius:10px;margin-left:6px;">🚨 EMERGENCY</span>` : '';
+    item.innerHTML = `
+      <div class="ddx-rank ${i===0?'rank-1':''}">${i+1}</div>
+      <div style="flex:1">
+        <div class="ddx-name">${r.condition.name}${emgBadge}</div>
+        <div class="ddx-category">${r.condition.category}</div>
+        ${r.matched.length > 0 ? `<div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px;">Matched signals: ${r.matched.slice(0,6).join(' · ')}</div>` : ''}
+      </div>
+      <div style="text-align:right">
+        <span class="confidence-badge ${confClass}">${r.confidence}</span>
+        <div style="font-size:0.7rem;color:var(--text-muted);margin-top:3px;">${Math.round(r.pct*100)}% match</div>
+      </div>`;
+    item.addEventListener('click', () => selectDdx(i));
+    ddxList.appendChild(item);
+  });
+
+  ddxBody.appendChild(ddxList);
+  ddxSec.querySelector('.result-section-header').addEventListener('click', () => {
+    const isOpen = ddxBody.classList.toggle('open');
+    document.getElementById('sec-arrow-1').textContent = isOpen ? '▲' : '▼';
+  });
+  ddxSec.appendChild(ddxBody);
+  panel.appendChild(ddxSec);
+
+  // ── 2. DIAGNOSTIC TESTS ───────────────────────────────────────────────────
+  const testSec = document.createElement('div');
+  testSec.className = 'result-section clinical-only-section';
+  testSec.id = 'result-section-2';
+  testSec.innerHTML = `<div class="result-section-header"><div class="result-section-title">2. 🔬 RECOMMENDED TESTS</div><span style="font-size:0.76rem;color:var(--text-muted);margin-left:10px;">For working diagnosis — updates when you click a DDx</span><span id="sec-arrow-2" style="color:var(--text-muted);">▲</span></div>`;
+  const testBody = document.createElement('div');
+  testBody.className = 'result-section-body open';
+  testBody.id = 'test-body-content';
+  testSec.querySelector('.result-section-header').addEventListener('click', () => {
+    const isOpen = testBody.classList.toggle('open');
+    document.getElementById('sec-arrow-2').textContent = isOpen ? '▲' : '▼';
+  });
+  testSec.appendChild(testBody);
+  panel.appendChild(testSec);
+
+  // ── 3. WORKING DIAGNOSIS ─────────────────────────────────────────────────
+  const wdSec = document.createElement('div');
+  wdSec.className = 'result-section';
+  wdSec.id = 'result-section-3';
+  wdSec.innerHTML = `<div class="result-section-header"><div class="result-section-title">3. ✅ WORKING DIAGNOSIS</div><span style="font-size:0.76rem;color:var(--text-muted);margin-left:10px;">Updates when you click a differential</span><span id="sec-arrow-3" style="color:var(--text-muted);">▲</span></div>`;
+  const wdBody = document.createElement('div');
+  wdBody.className = 'result-section-body open';
+  wdBody.id = 'wd-body-content';
+  wdSec.querySelector('.result-section-header').addEventListener('click', () => {
+    const isOpen = wdBody.classList.toggle('open');
+    document.getElementById('sec-arrow-3').textContent = isOpen ? '▲' : '▼';
+  });
+  wdSec.appendChild(wdBody);
+  panel.appendChild(wdSec);
+
+  // ── 4. TREATMENT PLAN ────────────────────────────────────────────────────
+  const txSec = document.createElement('div');
+  txSec.className = 'result-section';
+  txSec.id = 'result-section-4';
+  txSec.innerHTML = `<div class="result-section-header"><div class="result-section-title">4. 💊 TREATMENT PLAN</div><span style="font-size:0.76rem;color:var(--text-muted);margin-left:10px;">Updates when you click a differential</span><span id="sec-arrow-4" style="color:var(--text-muted);">▲</span></div>`;
+  const txBody = document.createElement('div');
+  txBody.className = 'result-section-body open';
+  txBody.id = 'tx-body-content';
+  txSec.querySelector('.result-section-header').addEventListener('click', () => {
+    const isOpen = txBody.classList.toggle('open');
+    document.getElementById('sec-arrow-4').textContent = isOpen ? '▲' : '▼';
+  });
+  txSec.appendChild(txBody);
+  panel.appendChild(txSec);
+
+  // ── 5. CLIENT EDUCATION ──────────────────────────────────────────────────
+  const eduSec = document.createElement('div');
+  eduSec.className = 'result-section';
+  eduSec.id = 'result-section-5';
+  eduSec.innerHTML = `<div class="result-section-header"><div class="result-section-title">5. 📋 CLIENT EDUCATION & FOLLOW-UP</div><span style="font-size:0.76rem;color:var(--text-muted);margin-left:10px;">Updates when you click a differential</span><span id="sec-arrow-5" style="color:var(--text-muted);">▲</span></div>`;
+  const eduBody = document.createElement('div');
+  eduBody.className = 'result-section-body open';
+  eduBody.id = 'edu-body-content';
+  eduSec.querySelector('.result-section-header').addEventListener('click', () => {
+    const isOpen = eduBody.classList.toggle('open');
+    document.getElementById('sec-arrow-5').textContent = isOpen ? '▲' : '▼';
+  });
+  eduSec.appendChild(eduBody);
+  panel.appendChild(eduSec);
+
+  // Populate sections with DDx #1 initially
+  selectDdx(0);
+}
+
+// ── SELECT DDX — updates tests/WD/treatment/education ──────────────────────
+function selectDdx(idx) {
+  const ranked = window._lastRanked;
+  const weight = window._lastWeight || 0;
+  if (!ranked || idx >= ranked.length) return;
+  const r = ranked[idx];
+  const cond = r.condition;
+
+  // Highlight selected DDx row
+  document.querySelectorAll('.ddx-item').forEach((el, i) => {
+    el.classList.toggle('ddx-selected', i === idx);
+    el.querySelector('.ddx-rank').classList.toggle('rank-1', i === idx);
+  });
+
+  // ── Update Tests ─────────────────────────────────────────────────────────
+  const testDiv = document.getElementById('test-body-content');
+  if (testDiv) {
+    testDiv.innerHTML = '';
+    const tierLabels = { tier1: '🔴 Tier 1 — Essential (Do Now)', tier2: '🟡 Tier 2 — Confirmatory', tier3: '⬜ Tier 3 — Specialist / Advanced' };
+    ['tier1','tier2','tier3'].forEach(t => {
+      const tests = cond.tests[t] || [];
+      if (!tests.length) return;
+      const td = document.createElement('div');
+      td.className = 'test-tier';
+      td.innerHTML = `<div class="test-tier-title">${tierLabels[t]}</div>`;
+      const tl = document.createElement('div');
+      tl.className = 'test-list';
+      tests.forEach(test => {
+        const tag = document.createElement('span');
+        tag.className = 'test-tag';
+        tag.textContent = test;
+        tl.appendChild(tag);
+      });
+      td.appendChild(tl);
+      testDiv.appendChild(td);
+    });
+  }
+
+  // ── Update Working Diagnosis ──────────────────────────────────────────────
+  const wdDiv = document.getElementById('wd-body-content');
+  if (wdDiv) {
+    wdDiv.innerHTML = `
+      <div style="display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:200px;">
+          <div style="font-size:1.1rem;font-weight:800;color:var(--primary);margin-bottom:4px;">${cond.name}</div>
+          <div style="font-size:0.82rem;color:var(--text-muted);margin-bottom:10px;">${cond.category}</div>
+          <div style="font-size:0.87rem;line-height:1.65;margin-bottom:10px;">
+            <strong>Clinical rationale:</strong> ${r.matched.slice(0,5).map(s=>`<em>${s}</em>`).join(', ')} — ${r.confidence.toLowerCase()} confidence match (${Math.round(r.pct*100)}%).
+          </div>
+          <div style="font-size:0.82rem;color:#856404;background:#fff8e1;border-left:3px solid #ffc107;padding:7px 11px;border-radius:0 4px 4px 0;">
+            ⚕ CDS tool only — final diagnosis by attending veterinarian.
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;">
+          <span class="confidence-badge confidence-${r.confidence.toLowerCase()}" style="font-size:0.9rem;padding:5px 14px;">${r.confidence} Confidence</span>
+          <span class="prognosis-badge prognosis-${cond.education?.prognosis||'fair'}">${(cond.education?.prognosis||'fair').charAt(0).toUpperCase()+(cond.education?.prognosis||'fair').slice(1)} Prognosis</span>
+        </div>
+      </div>`;
+  }
+
+  // ── Update Treatment ─────────────────────────────────────────────────────
+  const txDiv = document.getElementById('tx-body-content');
+  if (txDiv) {
+    txDiv.innerHTML = '';
+    const t = cond.treatment || {};
+    const cols = document.createElement('div');
+    cols.className = 'treatment-columns';
+
+    const makeCol = (title, icon, items, calcDose) => {
+      if (!items || !items.length) return null;
+      const col = document.createElement('div');
+      col.className = 'treatment-col';
+      col.innerHTML = `<div class="treatment-col-title">${icon} ${title}${calcDose && weight > 0 ? ` <span style="font-size:0.7rem;font-weight:400;color:var(--text-muted)">(${weight} kg)</span>` : ''}</div>`;
+      items.forEach(item => {
+        const d = document.createElement('div');
+        d.className = 'treatment-item';
+        d.innerHTML = calcDose ? renderMedText(item, weight) : item;
+        col.appendChild(d);
+      });
+      return col;
+    };
+
+    const medCol  = makeCol('Medications', '💊', t.medications, true);
+    const procCol = makeCol('Procedures', '🩺', t.procedures, false);
+    const dietCol = makeCol('Dietary', '🥗', t.diet, false);
+    if (medCol)  cols.appendChild(medCol);
+    if (procCol) cols.appendChild(procCol);
+    if (dietCol) cols.appendChild(dietCol);
+    txDiv.appendChild(cols);
+  }
+
+  // ── Update Client Education ───────────────────────────────────────────────
+  const eduDiv = document.getElementById('edu-body-content');
+  if (eduDiv) {
+    const e = cond.education || {};
+    eduDiv.innerHTML = '';
+
+    const eduCols = document.createElement('div');
+    eduCols.className = 'treatment-columns';
+
+    const monCol = document.createElement('div');
+    monCol.className = 'treatment-col';
+    monCol.innerHTML = `<div class="treatment-col-title">👁 Monitor at Home</div>`;
+    (e.monitor||[]).forEach(m => { const d=document.createElement('div'); d.className='treatment-item'; d.textContent=m; monCol.appendChild(d); });
+    eduCols.appendChild(monCol);
+
+    const rfCol = document.createElement('div');
+    rfCol.className = 'treatment-col';
+    rfCol.innerHTML = `<div class="treatment-col-title" style="color:var(--danger)">🚨 Return Immediately If</div>`;
+    (e.red_flags||[]).forEach(rf => { const d=document.createElement('div'); d.className='treatment-item'; d.style.borderLeftColor='var(--danger)'; d.textContent=rf; rfCol.appendChild(d); });
+    eduCols.appendChild(rfCol);
+
+    eduDiv.appendChild(eduCols);
+
+    const fuDiv = document.createElement('div');
+    fuDiv.style.cssText = 'margin-top:12px;padding:10px 14px;background:var(--light);border-radius:6px;font-size:0.87rem;line-height:1.6;';
+    fuDiv.innerHTML = `<strong>Follow-Up Schedule:</strong> ${e.followup || 'As directed by your veterinarian.'}`;
+    eduDiv.appendChild(fuDiv);
+  }
+
+  // Update subtitle labels in section headers
+  const names = ['result-section-2','result-section-3','result-section-4','result-section-5'];
+  names.forEach(id => {
+    const sub = document.querySelector(`#${id} .result-section-header span:nth-child(2)`);
+    if (sub) sub.textContent = `For: ${cond.name}`;
+  });
+}
+
+// ── COPY / PRINT ──────────────────────────────────────────────────────────
+function copyToClipboard() {
+  const panel = document.getElementById('results-panel');
+  const text = panel.innerText;
+  navigator.clipboard.writeText(text).then(() => {
+    alert('Clinical assessment copied to clipboard.');
+  }).catch(() => {
+    // Fallback
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    alert('Copied to clipboard.');
+  });
+}
+
+function printRecord() {
+  if (currentStep !== 4) goToStep(4);
+  document.body.classList.remove('client-print-mode');
+  setTimeout(() => window.print(), 300);
+}
+
+function printForClient() {
+  if (currentStep !== 4) goToStep(4);
+
+  // Build client header with patient info + clinic branding
+  const patientName = document.getElementById('f_patient_name').value || 'Patient';
+  const species     = document.getElementById('f_species').value || '';
+  const breed       = document.getElementById('f_breed').value || '';
+  const ageY        = document.getElementById('f_age_years').value || '0';
+  const ageM        = document.getElementById('f_age_months').value || '0';
+  const sex         = (document.getElementById('f_sex').value || '').replace(/_/g,' ');
+  const weight      = document.getElementById('f_weight').value || '';
+  const visitDate   = document.getElementById('f_visit_date').value || '';
+  const topCond     = document.querySelector('#result-section-3 .result-section-body');
+  const diagName    = topCond ? topCond.querySelector('[style*="font-weight:700"]')?.textContent || '' : '';
+
+  // Expand all result section bodies for print
+  document.querySelectorAll('.result-section-body').forEach(b => b.classList.add('open'));
+
+  // Inject/update client print header
+  let hdr = document.getElementById('client-print-header');
+  if (!hdr) {
+    hdr = document.createElement('div');
+    hdr.id = 'client-print-header';
+    hdr.className = 'client-print-header';
+    const panel = document.getElementById('results-panel');
+    panel.insertBefore(hdr, panel.firstChild);
+  }
+  hdr.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid #334f84;padding-bottom:12px;margin-bottom:18px;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <img src="Joy Vet Care.png" alt="Joy Vet Care" style="height:62px;width:62px;object-fit:cover;border-radius:50%;"
+             onerror="this.style.display='none'">
+        <div>
+          <div style="font-size:1.3rem;font-weight:800;color:#334f84;letter-spacing:-0.01em;">JOY VETERINARY CARE</div>
+          <div style="font-size:0.78rem;color:#5a6a8a;letter-spacing:0.04em;text-transform:uppercase;">Client Care Instructions &amp; Discharge Summary</div>
+        </div>
+      </div>
+      <div style="text-align:right;font-size:0.82rem;color:#5a6a8a;line-height:1.7;">
+        <div><strong>Date:</strong> ${visitDate}</div>
+        <div><strong>Patient:</strong> ${patientName}</div>
+        <div>${species} ${breed} · ${ageY}y ${ageM}m · ${sex}${weight ? ' · '+weight+' kg' : ''}</div>
+      </div>
+    </div>
+    ${diagName ? `<div style="background:#eef2fa;border-left:4px solid #334f84;padding:8px 14px;margin-bottom:16px;border-radius:0 4px 4px 0;font-size:0.9rem;"><strong>Diagnosis:</strong> ${diagName}</div>` : ''}
+    <div style="font-size:0.78rem;color:#856404;background:#fff8e1;border:1px solid #ffe082;border-radius:4px;padding:6px 12px;margin-bottom:14px;">
+      ⚕ This document is a care guide prepared by your veterinarian. Please follow all instructions carefully and contact the clinic with any concerns.
+    </div>
+  `;
+
+  document.body.classList.add('client-print-mode');
+  setTimeout(() => {
+    window.print();
+    // Remove class after print dialog closes
+    const afterPrint = () => {
+      document.body.classList.remove('client-print-mode');
+      window.removeEventListener('afterprint', afterPrint);
+    };
+    window.addEventListener('afterprint', afterPrint);
+  }, 300);
+}
+
+// ── CASE HISTORY ───────────────────────────────────────────────────────────
+function saveCase() {
+  const patientName = document.getElementById('f_patient_name').value || 'Unknown';
+  const species = document.getElementById('f_species').value;
+  const visitDate = document.getElementById('f_visit_date').value;
+  const results = document.getElementById('results-panel').innerText.substring(0, 500);
+
+  const caseObj = {
+    id: Date.now(),
+    patientName, species, visitDate,
+    preview: results,
+    formData: JSON.stringify(formData).substring(0, 2000)
+  };
+
+  let cases = JSON.parse(localStorage.getItem('joyvet_cases') || '[]');
+  cases.unshift(caseObj);
+  cases = cases.slice(0, 10);
+  localStorage.setItem('joyvet_cases', JSON.stringify(cases));
+  alert('Case saved to history.');
+  loadRecentCases();
+}
+
+function loadRecentCases() {
+  const cases = JSON.parse(localStorage.getItem('joyvet_cases') || '[]');
+  const list = document.getElementById('history-list');
+  const recentList = document.getElementById('recent-cases-list');
+
+  if (cases.length === 0) {
+    list.innerHTML = '<div class="empty-state"><div class="empty-icon">📂</div><p>No saved cases yet.</p></div>';
+    recentList.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><p>No cases recorded yet.</p></div>';
+    return;
+  }
+
+  const makeList = (container) => {
+    container.innerHTML = '';
+    cases.forEach(c => {
+      const item = document.createElement('div');
+      item.className = 'case-item';
+      item.innerHTML = `
+        <span style="font-size:1.2rem;">${SPECIES_ICONS[c.species] || '🐾'}</span>
+        <div style="flex:1">
+          <div style="font-weight:600;font-size:0.88rem;">${c.patientName}</div>
+          <div class="case-meta">${c.species} · ${c.visitDate}</div>
+        </div>
+        <button class="btn-quick-normal" onclick="deleteCaseById(${c.id})" style="color:var(--danger);border-color:var(--danger);">Del</button>
+      `;
+      container.appendChild(item);
+    });
+  };
+
+  makeList(list);
+  makeList(recentList);
+}
+
+function deleteCaseById(id) {
+  let cases = JSON.parse(localStorage.getItem('joyvet_cases') || '[]');
+  cases = cases.filter(c => c.id !== id);
+  localStorage.setItem('joyvet_cases', JSON.stringify(cases));
+  loadRecentCases();
+}
+
+function clearHistory() {
+  showConfirm('Clear Case History', 'Delete all saved cases? This cannot be undone.', () => {
+    localStorage.removeItem('joyvet_cases');
+    loadRecentCases();
+  });
+}
+
+// ── AUTOSAVE ──────────────────────────────────────────────────────────────
+function startAutosave() {
+  autosaveTimer = setInterval(() => {
+    if (currentStep >= 0) autosaveCurrentCase();
+  }, 30000);
+}
+
+function autosaveCurrentCase() {
+  try {
+    localStorage.setItem('joyvet_autosave', JSON.stringify({
+      formData,
+      step: currentStep,
+      patientName: document.getElementById('f_patient_name').value,
+      ts: Date.now()
+    }));
+  } catch(e) {}
+}
+
+function loadAutosave() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('joyvet_autosave') || 'null');
+    if (saved && saved.patientName && (Date.now() - saved.ts < 3600000)) {
+      // Offer to resume
+      const resume = confirm(`Resume previous case for "${saved.patientName}"?`);
+      if (resume) {
+        formData = saved.formData || {};
+        // Restore basic patient fields - done through formData
+        document.getElementById('f_patient_name').value = saved.patientName || '';
+        updatePatientBadge();
+        goToStep(saved.step || 0);
+      }
+    }
+  } catch(e) {}
+}
+
+// ── CONFIRM DIALOG ────────────────────────────────────────────────────────
+let confirmCallback = null;
+function showConfirm(title, msg, cb) {
+  document.getElementById('confirm-title').textContent = title;
+  document.getElementById('confirm-msg').textContent = msg;
+  confirmCallback = cb;
+  document.getElementById('confirm-overlay').classList.add('show');
+}
+function closeConfirm() {
+  document.getElementById('confirm-overlay').classList.remove('show');
+  confirmCallback = null;
+}
+document.getElementById('confirm-ok-btn').addEventListener('click', () => {
+  if (confirmCallback) confirmCallback();
+  closeConfirm();
+});
+document.getElementById('confirm-overlay').addEventListener('click', (e) => {
+  if (e.target === document.getElementById('confirm-overlay')) closeConfirm();
+});
+</script>
+</body>
+</html>
