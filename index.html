@@ -822,7 +822,7 @@ body.client-print-mode .clinical-only-section {
 
 @media print {
   #sidebar, #topbar, #progress-bar, .btn-nav-row, #btn-new-case,
-  .btn-accent, .btn-outline, .btn-ghost, .btn,
+  .btn-accent, .btn-outline, .btn-ghost, .btn, .results-action-bar,
   .view:not(#view-step4) { display: none !important; }
   #view-step4 { display: block !important; }
   #main { margin-left: 0 !important; padding: 0 !important; }
@@ -837,9 +837,8 @@ body.client-print-mode .clinical-only-section {
   body:not(.client-print-mode) #warnings-results { display: block !important; }
   body:not(.client-print-mode) .client-print-header { display: none !important; }
 
-  /* CLIENT PRINT: show only treatment (sec 4) + education (sec 5) + client header */
+  /* CLIENT PRINT: show working diagnosis (sec 3) + treatment (sec 4) + education (sec 5) + client header */
   body.client-print-mode .clinical-only-section { display: none !important; }
-  body.client-print-mode #result-section-3 { display: none !important; }
   body.client-print-mode #warnings-results { display: none !important; }
   body.client-print-mode .client-print-header { display: block !important; }
   body.client-print-mode .results-header { display: none !important; }
@@ -1223,7 +1222,7 @@ body.client-print-mode .clinical-only-section {
 
     <!-- ══════════════════════ STEP 4: RESULTS ══════════════════════════ -->
     <div class="view" id="view-step4">
-      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center;">
+      <div class="results-action-bar" style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center;">
         <button class="btn btn-ghost" onclick="prevStep()">← Back to Vitals</button>
         <button class="btn btn-outline" onclick="copyToClipboard()">📋 Copy</button>
         <button class="btn btn-outline" onclick="printRecord()">🖨 Full Record</button>
@@ -2799,6 +2798,10 @@ function printForClient() {
   // Expand all result section bodies for print
   document.querySelectorAll('.result-section-body').forEach(b => b.classList.add('open'));
 
+  // Get logo src from already-embedded sidebar image (works in combined file and online)
+  const logoEl = document.getElementById('sidebar-logo-img');
+  const logoSrc = (logoEl && logoEl.src) ? logoEl.src : '';
+
   // Inject/update client print header
   let hdr = document.getElementById('client-print-header');
   if (!hdr) {
@@ -2811,8 +2814,7 @@ function printForClient() {
   hdr.innerHTML = `
     <div style="display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid #334f84;padding-bottom:12px;margin-bottom:18px;">
       <div style="display:flex;align-items:center;gap:12px;">
-        <img src="Joy Vet Care.png" alt="Joy Vet Care" style="height:62px;width:62px;object-fit:cover;border-radius:50%;"
-             onerror="this.style.display='none'">
+        ${logoSrc ? `<img src="${logoSrc}" alt="Joy Vet Care" style="height:62px;width:62px;object-fit:cover;border-radius:50%;">` : ''}
         <div>
           <div style="font-size:1.3rem;font-weight:800;color:#334f84;letter-spacing:-0.01em;">JOY VETERINARY CARE</div>
           <div style="font-size:0.78rem;color:#5a6a8a;letter-spacing:0.04em;text-transform:uppercase;">Client Care Instructions &amp; Discharge Summary</div>
@@ -2824,7 +2826,7 @@ function printForClient() {
         <div>${species} ${breed} · ${ageY}y ${ageM}m · ${sex}${weight ? ' · '+weight+' kg' : ''}</div>
       </div>
     </div>
-    ${diagName ? `<div style="background:#eef2fa;border-left:4px solid #334f84;padding:8px 14px;margin-bottom:16px;border-radius:0 4px 4px 0;font-size:0.9rem;"><strong>Diagnosis:</strong> ${diagName}</div>` : ''}
+    ${diagName ? `<div style="background:#eef2fa;border-left:4px solid #334f84;padding:8px 14px;margin-bottom:16px;border-radius:0 4px 4px 0;font-size:0.9rem;"><strong>Working Diagnosis:</strong> ${diagName}</div>` : ''}
     <div style="font-size:0.78rem;color:#856404;background:#fff8e1;border:1px solid #ffe082;border-radius:4px;padding:6px 12px;margin-bottom:14px;">
       ⚕ This document is a care guide prepared by your veterinarian. Please follow all instructions carefully and contact the clinic with any concerns.
     </div>
@@ -2936,10 +2938,17 @@ function loadAutosave() {
       const resume = confirm(`Resume previous case for "${saved.patientName}"?`);
       if (resume) {
         formData = saved.formData || {};
-        // Restore basic patient fields - done through formData
         document.getElementById('f_patient_name').value = saved.patientName || '';
         updatePatientBadge();
         goToStep(saved.step || 0);
+        // Re-run engine and rebuild results panel if we were on the results step
+        if ((saved.step === 4) && Object.keys(formData).length > 0) {
+          try {
+            const ranked = runDiagnosisEngine(formData);
+            const warnings = checkContradictions(formData);
+            renderResults(ranked, warnings);
+          } catch(e) {}
+        }
       }
     }
   } catch(e) {}
