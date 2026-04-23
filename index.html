@@ -3040,12 +3040,14 @@ function printRecord() {
   const pNotes   = document.getElementById('f_history_notes')?.value || '';
   const docNotes = document.getElementById('doctor_comments')?.value || '';
   const fuDate   = document.getElementById('followup_date')?.value || '';
+  const pTemp    = document.getElementById('f_temperature')?.value || '';
+  const pHR      = document.getElementById('f_heart_rate')?.value || '';
+  const pRR      = document.getElementById('f_resp_rate')?.value || '';
+  const examFindings = captureExamFindings().filter(f => f.section !== 'Vital Signs');
 
-  // Collect key complaints from formData
   const complaints = Object.keys(formData).filter(k => k.startsWith('complaints_') && formData[k] === true)
     .map(k => k.replace('complaints_','').replace(/_/g,' '));
 
-  // Get top DDx name
   const topDdxEl = document.querySelector('#wd-body-content [style*="font-weight:800"]');
   const topDdx = topDdxEl ? topDdxEl.textContent.trim() : '';
 
@@ -3068,15 +3070,31 @@ function printRecord() {
         <div>Date: ${pDate}${pCaseNo?' | Case No: '+pCaseNo:''}</div>
       </div>
     </div>
+    <div style="font-weight:700;font-size:0.72rem;text-transform:uppercase;color:#334f84;margin-bottom:4px;letter-spacing:0.05em;">PATIENT INFORMATION</div>
     <table class="full-record-summary-table">
       <tr><td>Patient Name</td><td>${pName}</td><td>Owner</td><td>${pOwner||'—'}</td></tr>
       <tr><td>Species / Breed</td><td>${pSpecies} ${pBreed}</td><td>Age / Sex</td><td>${pAgeY}y ${pAgeM}m · ${pSex}</td></tr>
       <tr><td>Weight</td><td>${pWeight?pWeight+' kg':'—'}</td><td>Working Diagnosis</td><td><strong>${topDdx||'Pending'}</strong></td></tr>
       ${complaints.length?`<tr><td>Chief Complaints</td><td colspan="3">${complaints.join(', ')}</td></tr>`:''}
-      ${pNotes?`<tr><td>History Notes</td><td colspan="3">${pNotes}</td></tr>`:''}
+      ${pNotes?`<tr><td>History Notes</td><td colspan="3" style="white-space:pre-wrap;">${pNotes}</td></tr>`:''}
     </table>
-    ${docNotes?`<div style="background:#fff8e1;border-left:3px solid #f59e0b;padding:8px 12px;margin-bottom:12px;font-size:0.83rem;"><strong>Doctor's Notes:</strong> ${docNotes}</div>`:''}
-    ${fuDate?`<div style="background:#d1fae5;border-left:3px solid #059669;padding:6px 12px;margin-bottom:12px;font-size:0.82rem;"><strong>Follow-Up Scheduled:</strong> ${fuDate}</div>`:''}
+    ${(pTemp||pHR||pRR)?`
+    <div style="font-weight:700;font-size:0.72rem;text-transform:uppercase;color:#334f84;margin:10px 0 4px;letter-spacing:0.05em;">VITAL SIGNS</div>
+    <table class="full-record-summary-table">
+      <tr>
+        ${pTemp?`<td>Temperature</td><td>${pTemp} °C</td>`:''}
+        ${pHR?`<td>Heart Rate</td><td>${pHR} bpm</td>`:''}
+        ${pRR?`<td>Resp Rate</td><td>${pRR} br/min</td>`:''}
+      </tr>
+    </table>`:''}
+    ${examFindings.length?`
+    <div style="font-weight:700;font-size:0.72rem;text-transform:uppercase;color:#334f84;margin:10px 0 4px;letter-spacing:0.05em;">PHYSICAL EXAMINATION FINDINGS</div>
+    <table class="full-record-summary-table">
+      ${examFindings.map(f=>`<tr><td style="width:22%">${f.section}</td><td colspan="3">${f.values.join('<br>')}</td></tr>`).join('')}
+    </table>`:''}
+    ${docNotes?`<div style="background:#fff8e1;border-left:3px solid #f59e0b;padding:8px 12px;margin:10px 0;font-size:0.83rem;"><strong>Doctor's Notes:</strong><br>${docNotes}</div>`:''}
+    ${fuDate?`<div style="background:#d1fae5;border-left:3px solid #059669;padding:6px 12px;margin-bottom:10px;font-size:0.82rem;"><strong>Follow-Up Scheduled:</strong> ${fuDate}</div>`:''}
+    <div style="font-weight:700;font-size:0.72rem;text-transform:uppercase;color:#334f84;margin:10px 0 4px;letter-spacing:0.05em;">CLINICAL ASSESSMENT RESULTS</div>
   `;
 
   document.body.classList.add('full-print-mode');
@@ -3155,6 +3173,31 @@ function printForClient() {
 }
 
 // ── CASE HISTORY ───────────────────────────────────────────────────────────
+function captureExamFindings() {
+  const findings = [];
+  const temp = document.getElementById('f_temperature')?.value;
+  const hr   = document.getElementById('f_heart_rate')?.value;
+  const rr   = document.getElementById('f_resp_rate')?.value;
+  const vitals = [temp&&`Temp: ${temp}°C`, hr&&`HR: ${hr} bpm`, rr&&`RR: ${rr} br/min`].filter(Boolean);
+  if (vitals.length) findings.push({section:'Vital Signs', values:[vitals.join(' · ')]});
+
+  document.querySelectorAll('.pe-accordion').forEach(acc => {
+    const sectionTitle = acc.querySelector('.pe-accordion-title')?.textContent?.replace(/^\d+\.\s*/,'') || '';
+    const sectionFindings = [];
+    acc.querySelectorAll('.field-group').forEach(fg => {
+      const fieldLabel = fg.querySelector('.field-label')?.textContent || '';
+      const vals = [];
+      fg.querySelectorAll('input:checked').forEach(inp => {
+        const txt = inp.closest('label')?.querySelector('span')?.textContent?.trim() || '';
+        if (txt && !/^(normal|none)$/i.test(txt)) vals.push(txt);
+      });
+      if (vals.length) sectionFindings.push(`${fieldLabel}: ${vals.join(', ')}`);
+    });
+    if (sectionFindings.length) findings.push({section: sectionTitle, values: sectionFindings});
+  });
+  return findings;
+}
+
 function buildCaseObject() {
   const patientName = document.getElementById('f_patient_name').value || 'Unknown';
   const ownerName   = document.getElementById('f_owner_name').value || '';
@@ -3169,28 +3212,26 @@ function buildCaseObject() {
   const histNotes   = document.getElementById('f_history_notes')?.value || '';
   const doctorNotes = document.getElementById('doctor_comments')?.value || '';
   const followupDate= document.getElementById('followup_date')?.value || '';
+  const temperature = document.getElementById('f_temperature')?.value || '';
+  const heartRate   = document.getElementById('f_heart_rate')?.value || '';
+  const respRate    = document.getElementById('f_resp_rate')?.value || '';
+  const examFindings = captureExamFindings();
 
-  // Top DDx from results
   const topDdxEl = document.querySelector('#wd-body-content [style*="font-weight:800"]');
   const topDiagnosis = topDdxEl ? topDdxEl.textContent.trim() : '';
 
-  // Key complaints
   const complaints = Object.keys(formData)
     .filter(k => k.startsWith('complaints_') && formData[k] === true)
     .map(k => k.replace('complaints_','').replace(/_/g,' '));
-
-  // Key PE findings
-  const skinFindings = Object.keys(formData)
-    .filter(k => k.startsWith('skin_') && formData[k] === true && !k.endsWith('_normal'))
-    .map(k => k.replace('skin_','').replace(/_/g,' ')).slice(0,8);
 
   return {
     id: Date.now(),
     patientName, ownerName, species, breed,
     age: `${ageY}y ${ageM}m`, sex, weight, visitDate, caseNo,
     histNotes, doctorNotes, followupDate,
-    topDiagnosis, complaints, skinFindings,
-    formData: JSON.parse(JSON.stringify(formData)), // full deep copy
+    temperature, heartRate, respRate, examFindings,
+    topDiagnosis, complaints,
+    formData: JSON.parse(JSON.stringify(formData)),
     savedAt: new Date().toISOString()
   };
 }
@@ -3278,8 +3319,15 @@ function viewCaseDetail(id) {
   _currentDetailCaseId = id;
 
   const body = document.getElementById('case-detail-body');
+
+  const examHtml = (c.examFindings && c.examFindings.length) ? c.examFindings.map(f =>
+    `<div style="margin-bottom:8px;font-size:0.83rem;">
+      <div style="font-weight:700;font-size:0.75rem;text-transform:uppercase;color:#334f84;margin-bottom:2px;">${f.section}</div>
+      ${f.values.map(v=>`<div style="color:var(--text);line-height:1.5;padding-left:8px;">• ${v}</div>`).join('')}
+    </div>`).join('') : '';
+
   body.innerHTML = `
-    <div class="case-section-label">Patient Information</div>
+    <div class="case-section-label">1. Patient & Owner</div>
     <div class="case-field-row">
       <span>Patient Name:</span><strong>${c.patientName}</strong>
       <span>Owner:</span><strong>${c.ownerName||'—'}</strong>
@@ -3290,30 +3338,36 @@ function viewCaseDetail(id) {
     </div>
     <div class="case-field-row">
       <span>Weight:</span><strong>${c.weight?c.weight+' kg':'—'}</strong>
-      <span>Visit Date:</span><strong>${c.visitDate}</strong>
+      <span>Visit Date:</span><strong>${c.visitDate||'—'}</strong>
     </div>
     <div class="case-field-row">
       <span>Case No.:</span><strong>${c.caseNo||'—'}</strong>
-      <span>Saved At:</span><strong>${c.savedAt?new Date(c.savedAt).toLocaleString():'—'}</strong>
+      <span>Saved:</span><strong>${c.savedAt?new Date(c.savedAt).toLocaleString():'—'}</strong>
     </div>
 
     ${c.complaints&&c.complaints.length ? `
-    <div class="case-section-label">Chief Complaints</div>
-    <div style="font-size:0.84rem;line-height:1.7;color:var(--text);">${c.complaints.join(' · ')}</div>` : ''}
+    <div class="case-section-label">2. Chief Complaints</div>
+    <div style="font-size:0.84rem;line-height:1.8;color:var(--text);">${c.complaints.map(x=>`• ${x}`).join('<br>')}</div>` : ''}
 
     ${c.histNotes ? `
-    <div class="case-section-label">History Notes</div>
+    <div class="case-section-label">2. History Notes</div>
     <div style="font-size:0.84rem;line-height:1.6;white-space:pre-wrap;color:var(--text);">${c.histNotes}</div>` : ''}
 
-    ${c.skinFindings&&c.skinFindings.length ? `
-    <div class="case-section-label">Key Physical Exam Findings</div>
-    <div style="font-size:0.84rem;line-height:1.7;color:var(--text);">${c.skinFindings.join(' · ')}</div>` : ''}
+    ${(c.temperature||c.heartRate||c.respRate||examHtml) ? `
+    <div class="case-section-label">3. Vital Signs & Physical Examination</div>
+    ${c.temperature||c.heartRate||c.respRate ? `
+    <div style="font-size:0.84rem;background:#f0f4ff;padding:7px 12px;border-radius:4px;margin-bottom:8px;">
+      ${c.temperature?`<strong>Temp:</strong> ${c.temperature}°C &nbsp;&nbsp;`:''}
+      ${c.heartRate?`<strong>HR:</strong> ${c.heartRate} bpm &nbsp;&nbsp;`:''}
+      ${c.respRate?`<strong>RR:</strong> ${c.respRate} br/min`:''}
+    </div>` : ''}
+    ${examHtml}` : ''}
 
-    <div class="case-section-label">Diagnosis & Results</div>
+    <div class="case-section-label">4. Diagnosis</div>
     <div style="font-size:0.95rem;font-weight:700;color:var(--primary);margin-bottom:6px;">${c.topDiagnosis||'—'}</div>
 
     ${c.doctorNotes ? `
-    <div class="case-section-label">Doctor's Notes</div>
+    <div class="case-section-label">5. Doctor's Notes</div>
     <div style="font-size:0.84rem;line-height:1.7;white-space:pre-wrap;background:#fffbeb;border-left:3px solid #fbbf24;padding:8px 12px;border-radius:0 4px 4px 0;">${c.doctorNotes}</div>` : ''}
 
     ${c.followupDate ? `
@@ -3333,30 +3387,37 @@ function printCaseDetail() {
   const c = cases.find(c => c.id === _currentDetailCaseId);
   if (!c) return;
   const w = window.open('', '_blank', 'width=800,height=900');
+  const examHtmlPrint = (c.examFindings && c.examFindings.length) ? c.examFindings.map(f =>
+    `<tr><td>${f.section}</td><td>${f.values.join('<br>')}</td></tr>`).join('') : '';
   w.document.write(`<html><head><title>Case Record — ${c.patientName}</title>
-    <style>body{font-family:Inter,sans-serif;padding:20px;font-size:14px;line-height:1.6}
-    h1{color:#334f84;font-size:1.1rem}table{border-collapse:collapse;width:100%;margin-bottom:10px}
-    td{border:1px solid #ccc;padding:5px 8px}td:first-child{font-weight:600;background:#f4f6fb;width:30%}
-    .section{font-weight:700;font-size:0.75rem;text-transform:uppercase;color:#334f84;margin:12px 0 4px}
-    .notes{background:#fffbeb;border-left:3px solid #fbbf24;padding:8px;border-radius:0 4px 4px 0}</style>
+    <style>body{font-family:Inter,sans-serif;padding:20px;font-size:13px;line-height:1.6}
+    table{border-collapse:collapse;width:100%;margin-bottom:12px}
+    td{border:1px solid #ccc;padding:5px 8px}td:first-child{font-weight:600;background:#f4f6fb;width:30%;vertical-align:top}
+    .section{font-weight:700;font-size:0.72rem;text-transform:uppercase;color:#334f84;margin:12px 0 4px;letter-spacing:0.05em}
+    .notes{background:#fffbeb;border-left:3px solid #fbbf24;padding:8px 12px;border-radius:0 4px 4px 0;white-space:pre-wrap}
+    .vitals{background:#f0f4ff;padding:7px 12px;border-radius:4px;font-size:13px;margin-bottom:10px}</style>
     </head><body>
     <div style="border-bottom:3px solid #334f84;padding-bottom:8px;margin-bottom:14px;">
       <div style="font-size:1.3rem;font-weight:800;color:#334f84;">JOY VETERINARY CARE — MEDICAL RECORD</div>
-      <div style="font-size:0.8rem;color:#5a6a8a;">CONFIDENTIAL · ${c.visitDate}</div>
+      <div style="font-size:0.8rem;color:#5a6a8a;">CONFIDENTIAL · ${c.visitDate||''}</div>
     </div>
+    <div class="section">Patient &amp; Owner</div>
     <table>
       <tr><td>Patient</td><td>${c.patientName}</td></tr>
       <tr><td>Owner</td><td>${c.ownerName||'—'}</td></tr>
-      <tr><td>Species / Breed</td><td>${c.species} ${c.breed||''}</td></tr>
+      <tr><td>Species / Breed</td><td>${c.species||''} ${c.breed||''}</td></tr>
       <tr><td>Age / Sex / Weight</td><td>${c.age||'—'} · ${(c.sex||'').replace(/_/g,' ')} · ${c.weight?c.weight+' kg':'—'}</td></tr>
       <tr><td>Case No.</td><td>${c.caseNo||'—'}</td></tr>
-      <tr><td>Working Diagnosis</td><td><strong>${c.topDiagnosis||'—'}</strong></td></tr>
-      ${c.complaints&&c.complaints.length?`<tr><td>Chief Complaints</td><td>${c.complaints.join(', ')}</td></tr>`:''}
-      ${c.followupDate?`<tr><td>Follow-Up Date</td><td>${c.followupDate}</td></tr>`:''}
     </table>
-    ${c.histNotes?`<div class="section">History Notes</div><p>${c.histNotes}</p>`:''}
+    ${c.complaints&&c.complaints.length?`<div class="section">Chief Complaints</div><p>${c.complaints.map(x=>'• '+x).join('<br>')}</p>`:''}
+    ${c.histNotes?`<div class="section">History Notes</div><p style="white-space:pre-wrap;">${c.histNotes}</p>`:''}
+    ${c.temperature||c.heartRate||c.respRate?`<div class="section">Vital Signs</div><div class="vitals">${[c.temperature&&`Temp: <b>${c.temperature}°C</b>`,c.heartRate&&`HR: <b>${c.heartRate} bpm</b>`,c.respRate&&`RR: <b>${c.respRate} br/min</b>`].filter(Boolean).join(' &nbsp;·&nbsp; ')}</div>`:''}
+    ${examHtmlPrint?`<div class="section">Physical Examination</div><table>${examHtmlPrint}</table>`:''}
+    <div class="section">Working Diagnosis</div>
+    <p style="font-size:1rem;font-weight:700;color:#334f84;">${c.topDiagnosis||'—'}</p>
     ${c.doctorNotes?`<div class="section">Doctor's Notes</div><div class="notes">${c.doctorNotes}</div>`:''}
-    <div style="margin-top:20px;font-size:0.75rem;color:#888;">Printed from JoyVet CDS · ${new Date().toLocaleString()}</div>
+    ${c.followupDate?`<div class="section">Follow-Up</div><p style="color:#065f46;font-weight:600;">📅 ${c.followupDate}</p>`:''}
+    <div style="margin-top:20px;font-size:0.75rem;color:#888;border-top:1px solid #eee;padding-top:8px;">Printed from JoyVet CDS · ${new Date().toLocaleString()}</div>
     </body></html>`);
   w.document.close();
   setTimeout(() => w.print(), 300);
