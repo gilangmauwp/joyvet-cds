@@ -2211,9 +2211,15 @@ function quickNormalSection(secId) {
   document.querySelectorAll('[id^="pe-"][id$="-group"]').forEach(grp => {
     const fg = grp.closest('.field-group');
     if (!fg || fg.dataset.sectionId !== secId) return;
+    // BCS: normal is 5/9 (index 4), not the first option (1/9 Emaciated)
+    if (grp.id === 'pe-bcs-group') {
+      const bcsOpts = grp.querySelectorAll('.radio-pill input');
+      if (bcsOpts[4]) { bcsOpts[4].checked = true; bcsOpts[4].dispatchEvent(new Event('change')); }
+      return;
+    }
     const firstRadio = grp.querySelector('.radio-pill:first-child input');
     if (firstRadio) { firstRadio.checked = true; firstRadio.dispatchEvent(new Event('change')); }
-    const normalPill = Array.from(grp.querySelectorAll('.check-pill')).find(p => p.textContent.trim() === 'Normal' || p.textContent.trim() === 'None');
+    const normalPill = Array.from(grp.querySelectorAll('.check-pill')).find(p => /^(normal|none)$/i.test(p.textContent.trim()));
     if (normalPill) {
       const cb = normalPill.querySelector('input');
       if (!cb.checked) { cb.checked = true; cb.dispatchEvent(new Event('change')); }
@@ -3023,10 +3029,13 @@ function copyToClipboard() {
 }
 
 function printRecord() {
-  if (currentStep !== 4) goToStep(4);
-  document.body.classList.remove('client-print-mode');
+  const ranked = window._lastRanked;
+  if (!ranked || !ranked.length) { alert('Please generate a clinical assessment first.'); return; }
+  const cond = ranked[0].condition;
+  const tx   = cond.treatment  || {};
+  const ed   = cond.education  || {};
+  const weight = window._lastWeight || 0;
 
-  // Build full record header with patient info + clinical summary
   const pName    = document.getElementById('f_patient_name').value || 'Unknown';
   const pOwner   = document.getElementById('f_owner_name').value || '';
   const pSpecies = document.getElementById('f_species').value || '';
@@ -3044,132 +3053,266 @@ function printRecord() {
   const pHR      = document.getElementById('f_heart_rate')?.value || '';
   const pRR      = document.getElementById('f_resp_rate')?.value || '';
   const examFindings = captureExamFindings().filter(f => f.section !== 'Vital Signs');
-
   const complaints = Object.keys(formData).filter(k => k.startsWith('complaints_') && formData[k] === true)
     .map(k => k.replace('complaints_','').replace(/_/g,' '));
 
-  const topDdxEl = document.querySelector('#wd-body-content [style*="font-weight:800"]');
-  const topDdx = topDdxEl ? topDdxEl.textContent.trim() : '';
+  const sp = pSpecies.toLowerCase();
+  const meds = (tx.medications || []).filter(m => {
+    if (/\(dogs?\)\s*$/i.test(m)) return sp === 'dog';
+    if (/\(cats?\)\s*$/i.test(m)) return sp === 'cat';
+    if (/\(rabbits?\)\s*$/i.test(m)) return sp === 'rabbit';
+    return true;
+  });
 
-  // Expand all result sections for print
-  document.querySelectorAll('.result-section-body').forEach(b => b.classList.add('open'));
+  const allDdx = ranked.slice(0,5).map((r,i) =>
+    `<tr><td>${i+1}</td><td><strong>${r.condition.name}</strong></td><td>${r.confidence}</td><td>${r.score}</td></tr>`).join('');
 
-  let hdr = document.getElementById('full-record-header');
-  if (!hdr) {
-    hdr = document.createElement('div');
-    hdr.id = 'full-record-header';
-    hdr.className = 'full-record-header';
-    const panel = document.getElementById('results-panel');
-    panel.insertBefore(hdr, panel.firstChild);
-  }
-  hdr.innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid #334f84;padding-bottom:10px;margin-bottom:14px;">
-      <div style="font-size:1.2rem;font-weight:800;color:#334f84;">JOY VETERINARY CARE</div>
-      <div style="text-align:right;font-size:0.8rem;color:#5a6a8a;">
-        <div><strong>MEDICAL RECORD — CONFIDENTIAL</strong></div>
-        <div>Date: ${pDate}${pCaseNo?' | Case No: '+pCaseNo:''}</div>
-      </div>
+  const w = window.open('', '_blank', 'width=900,height=950');
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8">
+  <title>Medical Record — ${pName}</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:Inter,Helvetica,Arial,sans-serif;color:#1e293b;background:#fff;padding:24px 28px;font-size:13px;line-height:1.6}
+    .header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #1e3a5f;padding-bottom:10px;margin-bottom:14px}
+    .clinic-name{font-size:1.3rem;font-weight:800;color:#1e3a5f}
+    .clinic-sub{font-size:0.68rem;color:#64748b;text-transform:uppercase;letter-spacing:0.06em;margin-top:2px}
+    .rec-label{font-size:0.68rem;color:#64748b;text-transform:uppercase;letter-spacing:0.06em;text-align:right}
+    h2{font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#1e3a5f;border-bottom:1.5px solid #1e3a5f;padding-bottom:3px;margin:14px 0 8px}
+    table.info{border-collapse:collapse;width:100%;margin-bottom:10px}
+    table.info td{border:1px solid #cbd5e1;padding:4px 8px;vertical-align:top}
+    table.info td:first-child{font-weight:600;background:#f1f5f9;width:28%}
+    table.ddx{border-collapse:collapse;width:100%;margin-bottom:10px;font-size:12px}
+    table.ddx th{background:#1e3a5f;color:white;padding:4px 8px;text-align:left;font-weight:600}
+    table.ddx td{border:1px solid #cbd5e1;padding:4px 8px}
+    table.ddx tr:first-child td{background:#eef2fa}
+    .bullet{display:flex;gap:7px;margin-bottom:4px;font-size:12.5px}
+    .bd{color:#1e3a5f;font-weight:700;flex-shrink:0}
+    .med-item{background:#f8faff;border-left:3px solid #1e3a5f;padding:4px 9px;border-radius:0 3px 3px 0;margin-bottom:4px;font-size:12px}
+    .warn-item{display:flex;gap:7px;margin-bottom:4px;color:#b91c1c;font-size:12.5px}
+    .notes-box{background:#fff8e1;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:0 4px 4px 0;white-space:pre-wrap;font-size:12.5px}
+    .fu-box{background:#d1fae5;border-radius:4px;padding:7px 12px;color:#065f46;font-weight:600;font-size:12.5px;margin-top:8px}
+    .footer{margin-top:24px;border-top:1px solid #e2e8f0;padding-top:8px;font-size:0.68rem;color:#94a3b8;display:flex;justify-content:space-between}
+    .vitals-row{display:flex;gap:16px;background:#f0f4ff;padding:6px 12px;border-radius:4px;margin-bottom:8px;font-size:12.5px}
+    .vitals-row span{white-space:nowrap}
+    .confidential{font-size:0.68rem;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em}
+    .section-block{page-break-inside:avoid;margin-bottom:12px}
+    @media print{body{padding:0}@page{margin:1.5cm}}
+  </style>
+  </head><body>
+  <div class="header">
+    <div>
+      <div class="clinic-name">JOY VETERINARY CARE</div>
+      <div class="clinic-sub">Medical Record — Confidential</div>
     </div>
-    <div style="font-weight:700;font-size:0.72rem;text-transform:uppercase;color:#334f84;margin-bottom:4px;letter-spacing:0.05em;">PATIENT INFORMATION</div>
-    <table class="full-record-summary-table">
-      <tr><td>Patient Name</td><td>${pName}</td><td>Owner</td><td>${pOwner||'—'}</td></tr>
-      <tr><td>Species / Breed</td><td>${pSpecies} ${pBreed}</td><td>Age / Sex</td><td>${pAgeY}y ${pAgeM}m · ${pSex}</td></tr>
-      <tr><td>Weight</td><td>${pWeight?pWeight+' kg':'—'}</td><td>Working Diagnosis</td><td><strong>${topDdx||'Pending'}</strong></td></tr>
-      ${complaints.length?`<tr><td>Chief Complaints</td><td colspan="3">${complaints.join(', ')}</td></tr>`:''}
-      ${pNotes?`<tr><td>History Notes</td><td colspan="3" style="white-space:pre-wrap;">${pNotes}</td></tr>`:''}
-    </table>
-    ${(pTemp||pHR||pRR)?`
-    <div style="font-weight:700;font-size:0.72rem;text-transform:uppercase;color:#334f84;margin:10px 0 4px;letter-spacing:0.05em;">VITAL SIGNS</div>
-    <table class="full-record-summary-table">
-      <tr>
-        ${pTemp?`<td>Temperature</td><td>${pTemp} °C</td>`:''}
-        ${pHR?`<td>Heart Rate</td><td>${pHR} bpm</td>`:''}
-        ${pRR?`<td>Resp Rate</td><td>${pRR} br/min</td>`:''}
-      </tr>
-    </table>`:''}
-    ${examFindings.length?`
-    <div style="font-weight:700;font-size:0.72rem;text-transform:uppercase;color:#334f84;margin:10px 0 4px;letter-spacing:0.05em;">PHYSICAL EXAMINATION FINDINGS</div>
-    <table class="full-record-summary-table">
-      ${examFindings.map(f=>`<tr><td style="width:22%">${f.section}</td><td colspan="3">${f.values.join('<br>')}</td></tr>`).join('')}
-    </table>`:''}
-    ${docNotes?`<div style="background:#fff8e1;border-left:3px solid #f59e0b;padding:8px 12px;margin:10px 0;font-size:0.83rem;"><strong>Doctor's Notes:</strong><br>${docNotes}</div>`:''}
-    ${fuDate?`<div style="background:#d1fae5;border-left:3px solid #059669;padding:6px 12px;margin-bottom:10px;font-size:0.82rem;"><strong>Follow-Up Scheduled:</strong> ${fuDate}</div>`:''}
-    <div style="font-weight:700;font-size:0.72rem;text-transform:uppercase;color:#334f84;margin:10px 0 4px;letter-spacing:0.05em;">CLINICAL ASSESSMENT RESULTS</div>
-  `;
+    <div>
+      <div class="rec-label">Date: ${pDate}${pCaseNo?' | Case #'+pCaseNo:''}</div>
+      <div class="confidential" style="margin-top:4px;">Do not share without consent</div>
+    </div>
+  </div>
 
-  document.body.classList.add('full-print-mode');
-  setTimeout(() => {
-    window.print();
-    const afterPrint = () => {
-      document.body.classList.remove('full-print-mode');
-      window.removeEventListener('afterprint', afterPrint);
-    };
-    window.addEventListener('afterprint', afterPrint);
-  }, 300);
+  <h2>Patient Information</h2>
+  <table class="info">
+    <tr><td>Patient Name</td><td>${pName}</td><td>Owner</td><td>${pOwner||'—'}</td></tr>
+    <tr><td>Species / Breed</td><td>${pSpecies} ${pBreed}</td><td>Age / Sex</td><td>${pAgeY}y ${pAgeM}m · ${pSex}</td></tr>
+    <tr><td>Body Weight</td><td>${pWeight?pWeight+' kg':'—'}</td><td>Visit Date</td><td>${pDate}</td></tr>
+    ${complaints.length?`<tr><td>Chief Complaints</td><td colspan="3">${complaints.join(' · ')}</td></tr>`:''}
+    ${pNotes?`<tr><td>History Notes</td><td colspan="3" style="white-space:pre-wrap;">${pNotes}</td></tr>`:''}
+  </table>
+
+  ${(pTemp||pHR||pRR)?`
+  <h2>Vital Signs</h2>
+  <div class="vitals-row">
+    ${pTemp?`<span>🌡 Temp: <strong>${pTemp} °C</strong></span>`:''}
+    ${pHR?`<span>❤ HR: <strong>${pHR} bpm</strong></span>`:''}
+    ${pRR?`<span>🫁 RR: <strong>${pRR} br/min</strong></span>`:''}
+  </div>`:''}
+
+  ${examFindings.length?`
+  <h2>Physical Examination Findings</h2>
+  <table class="info">
+    ${examFindings.map(f=>`<tr><td>${f.section}</td><td>${f.values.join('<br>')}</td></tr>`).join('')}
+  </table>`:''}
+
+  <h2>Differential Diagnosis</h2>
+  <table class="ddx">
+    <tr><th>#</th><th>Condition</th><th>Confidence</th><th>Score</th></tr>
+    ${allDdx}
+  </table>
+
+  ${(tx.goals&&tx.goals.length)||(meds.length)||(tx.supportive&&tx.supportive.length)||(tx.monitoring&&tx.monitoring.length)?`
+  <h2>Treatment Plan</h2>
+  <div class="section-block">
+    ${tx.goals&&tx.goals.length?`<div style="margin-bottom:8px;"><strong>Goals:</strong><br>${tx.goals.map(g=>`<div class="bullet"><span class="bd">•</span><span>${g}</span></div>`).join('')}</div>`:''}
+    ${meds.length?`<div style="margin-bottom:8px;"><strong>Medications:</strong><br>${meds.map(m=>`<div class="med-item">💊 ${m}</div>`).join('')}</div>`:''}
+    ${tx.supportive&&tx.supportive.length?`<div style="margin-bottom:8px;"><strong>Supportive Care:</strong><br>${tx.supportive.map(s=>`<div class="bullet"><span class="bd">•</span><span>${s}</span></div>`).join('')}</div>`:''}
+    ${tx.monitoring&&tx.monitoring.length?`<div><strong>Monitoring:</strong><br>${tx.monitoring.map(m=>`<div class="bullet"><span class="bd">•</span><span>${m}</span></div>`).join('')}</div>`:''}
+  </div>`:''}
+
+  ${ed.explanation||(ed.home_care&&ed.home_care.length)||(ed.when_to_return&&ed.when_to_return.length)?`
+  <h2>Client Education &amp; Follow-Up</h2>
+  <div class="section-block">
+    ${ed.explanation?`<p style="margin-bottom:8px;">${ed.explanation}</p>`:''}
+    ${ed.home_care&&ed.home_care.length?`<div style="margin-bottom:8px;"><strong>Home Care:</strong><br>${ed.home_care.map(h=>`<div class="bullet"><span class="bd">•</span><span>${h}</span></div>`).join('')}</div>`:''}
+    ${ed.when_to_return&&ed.when_to_return.length?`<div style="margin-bottom:8px;"><strong>Return to clinic if:</strong><br>${ed.when_to_return.map(r=>`<div class="warn-item"><span class="warn-dot" style="font-weight:700;flex-shrink:0;">⚠</span><span>${r}</span></div>`).join('')}</div>`:''}
+    ${ed.prevention&&ed.prevention.length?`<div style="margin-bottom:8px;"><strong>Prevention:</strong><br>${ed.prevention.map(p=>`<div class="bullet"><span class="bd">•</span><span>${p}</span></div>`).join('')}</div>`:''}
+    ${ed.prognosis?`<div><strong>Prognosis:</strong> ${ed.prognosis}</div>`:''}
+  </div>`:''}
+
+  ${docNotes?`<h2>Doctor's Notes</h2><div class="notes-box">${docNotes}</div>`:''}
+  ${fuDate?`<div class="fu-box">📅 Follow-Up Scheduled: ${fuDate}</div>`:''}
+
+  <div class="footer">
+    <span>JOY VETERINARY CARE — Medical Record — CONFIDENTIAL</span>
+    <span>Printed: ${new Date().toLocaleString()}</span>
+  </div>
+  </body></html>`);
+  w.document.close();
+  setTimeout(() => w.print(), 400);
 }
 
 function printForClient() {
-  if (currentStep !== 4) goToStep(4);
+  const ranked = window._lastRanked;
+  if (!ranked || !ranked.length) { alert('Please generate a clinical assessment first.'); return; }
+  const cond = ranked[0].condition;
+  const tx   = cond.treatment  || {};
+  const ed   = cond.education  || {};
+  const weight = window._lastWeight || 0;
 
-  // Build client header with patient info + clinic branding
   const patientName = document.getElementById('f_patient_name').value || 'Patient';
+  const ownerName   = document.getElementById('f_owner_name').value || '';
   const species     = document.getElementById('f_species').value || '';
   const breed       = document.getElementById('f_breed').value || '';
   const ageY        = document.getElementById('f_age_years').value || '0';
   const ageM        = document.getElementById('f_age_months').value || '0';
   const sex         = (document.getElementById('f_sex').value || '').replace(/_/g,' ');
-  const weight      = document.getElementById('f_weight').value || '';
   const visitDate   = document.getElementById('f_visit_date').value || '';
-  const topCond     = document.querySelector('#result-section-3 .result-section-body');
-  const diagName    = topCond ? topCond.querySelector('[style*="font-weight:700"]')?.textContent || '' : '';
+  const caseNo      = document.getElementById('f_case_no').value || '';
+  const fuDate      = document.getElementById('followup_date')?.value || '';
 
-  // Expand all result section bodies for print
-  document.querySelectorAll('.result-section-body').forEach(b => b.classList.add('open'));
+  // Filter meds by species
+  const sp = species.toLowerCase();
+  const meds = (tx.medications || []).filter(m => {
+    if (/\(dogs?\)\s*$/i.test(m)) return sp === 'dog';
+    if (/\(cats?\)\s*$/i.test(m)) return sp === 'cat';
+    if (/\(rabbits?\)\s*$/i.test(m)) return sp === 'rabbit';
+    return true;
+  });
 
-  // Get logo src from already-embedded sidebar image (works in combined file and online)
-  const logoEl = document.getElementById('sidebar-logo-img');
-  const logoSrc = (logoEl && logoEl.src) ? logoEl.src : '';
+  const section = (title, items, color='#334f84') => items && items.length ? `
+    <div style="margin-bottom:18px;page-break-inside:avoid;">
+      <div style="font-weight:700;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.07em;color:${color};border-bottom:2px solid ${color};padding-bottom:4px;margin-bottom:10px;">${title}</div>
+      ${items.map(item=>`<div style="display:flex;gap:8px;margin-bottom:5px;font-size:13px;line-height:1.5;">
+        <span style="color:${color};font-weight:700;flex-shrink:0;">•</span>
+        <span>${item}</span>
+      </div>`).join('')}
+    </div>` : '';
 
-  // Inject/update client print header
-  let hdr = document.getElementById('client-print-header');
-  if (!hdr) {
-    hdr = document.createElement('div');
-    hdr.id = 'client-print-header';
-    hdr.className = 'client-print-header';
-    const panel = document.getElementById('results-panel');
-    panel.insertBefore(hdr, panel.firstChild);
-  }
-  hdr.innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid #334f84;padding-bottom:12px;margin-bottom:18px;">
-      <div style="display:flex;align-items:center;gap:12px;">
-        ${logoSrc ? `<img src="${logoSrc}" alt="Joy Vet Care" style="height:62px;width:62px;object-fit:cover;border-radius:50%;">` : ''}
-        <div>
-          <div style="font-size:1.3rem;font-weight:800;color:#334f84;letter-spacing:-0.01em;">JOY VETERINARY CARE</div>
-          <div style="font-size:0.78rem;color:#5a6a8a;letter-spacing:0.04em;text-transform:uppercase;">Client Care Instructions &amp; Discharge Summary</div>
-        </div>
-      </div>
-      <div style="text-align:right;font-size:0.82rem;color:#5a6a8a;line-height:1.7;">
-        <div><strong>Date:</strong> ${visitDate}</div>
-        <div><strong>Patient:</strong> ${patientName}</div>
-        <div>${species} ${breed} · ${ageY}y ${ageM}m · ${sex}${weight ? ' · '+weight+' kg' : ''}</div>
-      </div>
+  const w = window.open('', '_blank', 'width=800,height=900');
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8">
+  <title>Care Instructions — ${patientName}</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:Inter,Helvetica,Arial,sans-serif;color:#1e293b;background:#fff;padding:24px 28px;font-size:14px;line-height:1.6}
+    .header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #334f84;padding-bottom:12px;margin-bottom:18px}
+    .clinic-name{font-size:1.4rem;font-weight:800;color:#334f84}
+    .clinic-sub{font-size:0.72rem;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;margin-top:2px}
+    .patient-box{text-align:right;font-size:0.82rem;color:#475569;line-height:1.8}
+    .dx-box{background:#eef2fa;border-left:4px solid #334f84;padding:10px 14px;border-radius:0 6px 6px 0;margin-bottom:18px}
+    .dx-box strong{font-size:0.95rem;color:#334f84}
+    .notice{background:#fff8e1;border:1px solid #fbbf24;border-radius:6px;padding:8px 12px;font-size:0.78rem;color:#92400e;margin-bottom:20px}
+    h2{font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#334f84;border-bottom:2px solid #334f84;padding-bottom:4px;margin-bottom:10px}
+    .tx-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 24px}
+    .med-item{background:#f8faff;border-left:3px solid #334f84;padding:6px 10px;border-radius:0 4px 4px 0;margin-bottom:6px;font-size:12.5px;line-height:1.5}
+    .bullet{display:flex;gap:8px;margin-bottom:5px;font-size:13px;line-height:1.5}
+    .bullet-dot{color:#334f84;font-weight:700;flex-shrink:0}
+    .warn-item{display:flex;gap:8px;margin-bottom:5px;font-size:13px;line-height:1.5;color:#b91c1c}
+    .warn-dot{font-weight:700;flex-shrink:0}
+    .footer{margin-top:28px;border-top:1px solid #e2e8f0;padding-top:10px;font-size:0.72rem;color:#94a3b8;display:flex;justify-content:space-between}
+    .section-block{margin-bottom:20px;page-break-inside:avoid}
+    @media print{body{padding:0}@page{margin:1.5cm}}
+  </style>
+  </head><body>
+  <div class="header">
+    <div>
+      <div class="clinic-name">JOY VETERINARY CARE</div>
+      <div class="clinic-sub">Client Care Instructions &amp; Discharge Summary</div>
     </div>
-    ${diagName ? `<div style="background:#eef2fa;border-left:4px solid #334f84;padding:8px 14px;margin-bottom:16px;border-radius:0 4px 4px 0;font-size:0.9rem;"><strong>Working Diagnosis:</strong> ${diagName}</div>` : ''}
-    <div style="font-size:0.78rem;color:#856404;background:#fff8e1;border:1px solid #ffe082;border-radius:4px;padding:6px 12px;margin-bottom:14px;">
-      ⚕ This document is a care guide prepared by your veterinarian. Please follow all instructions carefully and contact the clinic with any concerns.
+    <div class="patient-box">
+      <div><strong>${patientName}</strong>${ownerName?' — Owner: '+ownerName:''}</div>
+      <div>${species} ${breed} · ${ageY}y ${ageM}m · ${sex}${weight?' · '+weight+' kg':''}</div>
+      <div>Date: ${visitDate}${caseNo?' | Case #'+caseNo:''}</div>
     </div>
-  `;
+  </div>
 
-  document.body.classList.add('client-print-mode');
-  setTimeout(() => {
-    window.print();
-    // Remove class after print dialog closes
-    const afterPrint = () => {
-      document.body.classList.remove('client-print-mode');
-      window.removeEventListener('afterprint', afterPrint);
-    };
-    window.addEventListener('afterprint', afterPrint);
-  }, 300);
+  <div class="dx-box">
+    <strong>Working Diagnosis: ${cond.name}</strong>
+    ${cond.description ? `<div style="font-size:0.85rem;color:#475569;margin-top:4px;">${cond.description}</div>` : ''}
+  </div>
+
+  <div class="notice">⚕ This document is a care guide prepared by your veterinarian. Please follow all instructions carefully and contact the clinic with any questions or concerns.</div>
+
+  ${tx.goals && tx.goals.length ? `
+  <div class="section-block">
+    <h2>Treatment Goals</h2>
+    ${tx.goals.map(g=>`<div class="bullet"><span class="bullet-dot">•</span><span>${g}</span></div>`).join('')}
+  </div>` : ''}
+
+  ${meds.length ? `
+  <div class="section-block">
+    <h2>Prescribed Medications</h2>
+    ${meds.map(m=>`<div class="med-item">💊 ${m}</div>`).join('')}
+  </div>` : ''}
+
+  ${tx.supportive && tx.supportive.length ? `
+  <div class="section-block">
+    <h2>Supportive Care</h2>
+    ${tx.supportive.map(s=>`<div class="bullet"><span class="bullet-dot">•</span><span>${s}</span></div>`).join('')}
+  </div>` : ''}
+
+  ${ed.explanation ? `
+  <div class="section-block">
+    <h2>About This Condition</h2>
+    <p style="font-size:13px;line-height:1.6;">${ed.explanation}</p>
+  </div>` : ''}
+
+  ${ed.home_care && ed.home_care.length ? `
+  <div class="section-block">
+    <h2>Home Care Instructions</h2>
+    ${ed.home_care.map(h=>`<div class="bullet"><span class="bullet-dot">•</span><span>${h}</span></div>`).join('')}
+  </div>` : ''}
+
+  ${ed.when_to_return && ed.when_to_return.length ? `
+  <div class="section-block">
+    <h2>Return to Clinic Immediately If</h2>
+    ${ed.when_to_return.map(r=>`<div class="warn-item"><span class="warn-dot">⚠</span><span>${r}</span></div>`).join('')}
+  </div>` : ''}
+
+  ${ed.prevention && ed.prevention.length ? `
+  <div class="section-block">
+    <h2>Prevention</h2>
+    ${ed.prevention.map(p=>`<div class="bullet"><span class="bullet-dot">•</span><span>${p}</span></div>`).join('')}
+  </div>` : ''}
+
+  ${tx.monitoring && tx.monitoring.length ? `
+  <div class="section-block">
+    <h2>Monitoring & Follow-Up</h2>
+    ${tx.monitoring.map(m=>`<div class="bullet"><span class="bullet-dot">•</span><span>${m}</span></div>`).join('')}
+    ${fuDate ? `<div style="margin-top:10px;background:#d1fae5;border-radius:6px;padding:8px 12px;font-weight:600;color:#065f46;">📅 Scheduled Follow-Up: ${fuDate}</div>` : ''}
+  </div>` : fuDate ? `<div style="margin-top:10px;background:#d1fae5;border-radius:6px;padding:8px 12px;font-weight:600;color:#065f46;">📅 Scheduled Follow-Up: ${fuDate}</div>` : ''}
+
+  ${ed.prognosis ? `
+  <div class="section-block">
+    <h2>Prognosis</h2>
+    <p style="font-size:13px;">${ed.prognosis}</p>
+  </div>` : ''}
+
+  <div class="footer">
+    <span>JOY VETERINARY CARE — Client Copy</span>
+    <span>Printed: ${new Date().toLocaleString()}</span>
+  </div>
+  </body></html>`);
+  w.document.close();
+  setTimeout(() => w.print(), 400);
 }
 
 // ── CASE HISTORY ───────────────────────────────────────────────────────────
@@ -3224,13 +3367,22 @@ function buildCaseObject() {
     .filter(k => k.startsWith('complaints_') && formData[k] === true)
     .map(k => k.replace('complaints_','').replace(/_/g,' '));
 
+  // Save full results so case history can show treatment + education
+  const topRanked = window._lastRanked && window._lastRanked[0];
+  const resultsData = topRanked ? {
+    name:      topRanked.condition.name,
+    treatment: topRanked.condition.treatment  || {},
+    education: topRanked.condition.education  || {},
+    tests:     { tier1: (topRanked.condition.tests && topRanked.condition.tests.tier1) || [] },
+  } : null;
+
   return {
     id: Date.now(),
     patientName, ownerName, species, breed,
     age: `${ageY}y ${ageM}m`, sex, weight, visitDate, caseNo,
     histNotes, doctorNotes, followupDate,
     temperature, heartRate, respRate, examFindings,
-    topDiagnosis, complaints,
+    topDiagnosis, complaints, resultsData,
     formData: JSON.parse(JSON.stringify(formData)),
     savedAt: new Date().toISOString()
   };
@@ -3366,8 +3518,33 @@ function viewCaseDetail(id) {
     <div class="case-section-label">4. Diagnosis</div>
     <div style="font-size:0.95rem;font-weight:700;color:var(--primary);margin-bottom:6px;">${c.topDiagnosis||'—'}</div>
 
+    ${c.resultsData && c.resultsData.tests && c.resultsData.tests.tier1 && c.resultsData.tests.tier1.length ? `
+    <div class="case-section-label">Recommended Tests (Essential)</div>
+    <div style="font-size:0.83rem;line-height:1.8;">${c.resultsData.tests.tier1.map(t=>`• ${t}`).join('<br>')}</div>` : ''}
+
+    ${c.resultsData && c.resultsData.treatment ? (() => {
+      const tx = c.resultsData.treatment;
+      const rows = [];
+      if (tx.goals && tx.goals.length) rows.push(`<div style="margin-bottom:8px;"><strong>Goals:</strong><br>${tx.goals.map(x=>`• ${x}`).join('<br>')}</div>`);
+      if (tx.medications && tx.medications.length) rows.push(`<div style="margin-bottom:8px;"><strong>Medications:</strong><br>${tx.medications.map(x=>`• ${x}`).join('<br>')}</div>`);
+      if (tx.supportive && tx.supportive.length) rows.push(`<div style="margin-bottom:8px;"><strong>Supportive Care:</strong><br>${tx.supportive.map(x=>`• ${x}`).join('<br>')}</div>`);
+      if (tx.monitoring && tx.monitoring.length) rows.push(`<div style="margin-bottom:8px;"><strong>Monitoring:</strong><br>${tx.monitoring.map(x=>`• ${x}`).join('<br>')}</div>`);
+      return rows.length ? `<div class="case-section-label">5. Treatment Plan</div><div style="font-size:0.83rem;line-height:1.8;">${rows.join('')}</div>` : '';
+    })() : ''}
+
+    ${c.resultsData && c.resultsData.education ? (() => {
+      const ed = c.resultsData.education;
+      const rows = [];
+      if (ed.explanation) rows.push(`<div style="margin-bottom:8px;">${ed.explanation}</div>`);
+      if (ed.home_care && ed.home_care.length) rows.push(`<div style="margin-bottom:8px;"><strong>Home Care:</strong><br>${ed.home_care.map(x=>`• ${x}`).join('<br>')}</div>`);
+      if (ed.when_to_return && ed.when_to_return.length) rows.push(`<div style="margin-bottom:8px;"><strong>Return if:</strong><br>${ed.when_to_return.map(x=>`• ${x}`).join('<br>')}</div>`);
+      if (ed.prevention && ed.prevention.length) rows.push(`<div style="margin-bottom:8px;"><strong>Prevention:</strong><br>${ed.prevention.map(x=>`• ${x}`).join('<br>')}</div>`);
+      if (ed.prognosis) rows.push(`<div><strong>Prognosis:</strong> ${ed.prognosis}</div>`);
+      return rows.length ? `<div class="case-section-label">6. Client Education & Follow-Up</div><div style="font-size:0.83rem;line-height:1.8;">${rows.join('')}</div>` : '';
+    })() : ''}
+
     ${c.doctorNotes ? `
-    <div class="case-section-label">5. Doctor's Notes</div>
+    <div class="case-section-label">7. Doctor's Notes</div>
     <div style="font-size:0.84rem;line-height:1.7;white-space:pre-wrap;background:#fffbeb;border-left:3px solid #fbbf24;padding:8px 12px;border-radius:0 4px 4px 0;">${c.doctorNotes}</div>` : ''}
 
     ${c.followupDate ? `
