@@ -1331,7 +1331,8 @@ body.client-print-mode .clinical-only-section { display: none !important; }
           <div class="card-title">Case History</div>
           <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
             <span id="cloud-status-badge" class="cloud-badge offline">● Offline</span>
-            <button class="btn-quick-normal" onclick="showCloudLogin()" id="cloud-login-btn">☁ Cloud Sync</button>
+            <span id="drive-status-badge" style="display:none;font-size:0.75rem;background:#e8f5e9;color:#2e7d32;border-radius:10px;padding:2px 8px;font-weight:600;"></span>
+            <button class="btn-quick-normal" onclick="showCloudLogin()" id="cloud-login-btn">☁ Clinic Sync</button>
             <button class="btn-quick-normal" onclick="exportAllCases()">⬇ Export JSON</button>
             <button class="btn-quick-normal" onclick="document.getElementById('import-file').click()">⬆ Import</button>
             <input type="file" id="import-file" accept=".json" style="display:none" onchange="importCases(this)">
@@ -1370,6 +1371,60 @@ body.client-print-mode .clinical-only-section { display: none !important; }
             <div style="font-weight:700;font-size:0.82rem;margin-bottom:6px;">Clinic Sync Key</div>
             <div style="font-family:monospace;font-size:0.82rem;word-break:break-all;color:var(--primary);" id="about-clinic-key"></div>
             <p style="font-size:0.78rem;color:var(--text-muted);margin-top:6px;">This key identifies your clinic. All devices that share this file will sync to the same cloud database.</p>
+          </div>
+
+          <h2 style="margin-top:22px;">📁 Google Drive Backup (One-Time Setup)</h2>
+          <p>Automatically saves every case to your personal Google Drive, organised by Species → Client → Patient.</p>
+          <ol style="font-size:0.86rem;line-height:2;color:var(--text-muted);margin-left:16px;margin-bottom:12px;">
+            <li>Go to <strong>script.google.com</strong> → click <strong>New project</strong></li>
+            <li>Delete any existing code, paste the script below, click 💾 Save</li>
+            <li>Click <strong>Deploy → New deployment → Web app</strong></li>
+            <li>Set <em>Execute as: <strong>Me</strong></em> and <em>Who has access: <strong>Anyone</strong></em> → Deploy</li>
+            <li>Copy the <strong>Web app URL</strong> and paste it in the box below → Save</li>
+          </ol>
+          <div style="background:#1e293b;border-radius:6px;padding:12px;margin-bottom:10px;position:relative;">
+            <button onclick="copyAppsScript()" style="position:absolute;top:8px;right:8px;background:#334f84;color:white;border:none;border-radius:4px;padding:3px 10px;font-size:0.75rem;cursor:pointer;">📋 Copy</button>
+            <pre id="apps-script-block" style="color:#e2e8f0;font-size:0.72rem;line-height:1.6;white-space:pre;overflow-x:auto;font-family:monospace;">function doPost(e) {
+  try {
+    var data = JSON.parse(e.postData.contents);
+    saveCase(data);
+    return ContentService.createTextOutput('{"status":"ok"}')
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch(err) {
+    return ContentService.createTextOutput('{"status":"error","msg":"'+err.message+'"}')
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+function saveCase(data) {
+  var species  = cap(data.species  || 'Unknown');
+  var client   = clean(data.ownerName   || 'Unknown Client');
+  var patient  = clean(data.patientName || 'Unknown Patient');
+  var date     = data.visitDate || fmtDate();
+  var root     = getFolder('JoyVet CDS Records', DriveApp.getRootFolder());
+  var spFolder = getFolder(species,  root);
+  var clFolder = getFolder(client,   spFolder);
+  var ptFolder = getFolder(patient,  clFolder);
+  var fname    = date + '_' + patient + '_record.json';
+  var content  = JSON.stringify(data, null, 2);
+  var existing = ptFolder.getFilesByName(fname);
+  if (existing.hasNext()) { existing.next().setContent(content); }
+  else { ptFolder.createFile(fname, content, MimeType.PLAIN_TEXT); }
+}
+function getFolder(name, parent) {
+  var f = parent.getFoldersByName(name);
+  return f.hasNext() ? f.next() : parent.createFolder(name);
+}
+function cap(s) { return s.charAt(0).toUpperCase()+s.slice(1).toLowerCase(); }
+function clean(s) { return s.replace(/[\\\/\:\*\?\"\<\>\|]/g,'_').trim().substring(0,50)||'Unknown'; }
+function fmtDate() { return Utilities.formatDate(new Date(),'GMT+7','yyyy-MM-dd'); }</pre>
+          </div>
+          <div style="background:#f4f6fb;border-radius:6px;padding:14px;">
+            <div style="font-weight:700;font-size:0.82rem;margin-bottom:8px;">Google Apps Script Web App URL</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <input type="text" id="drive-script-url" placeholder="https://script.google.com/macros/s/.../exec" style="flex:1;min-width:200px;font-size:0.82rem;box-sizing:border-box;">
+              <button class="btn btn-outline" style="font-size:0.82rem;" onclick="saveGoogleDriveUrl()">Save URL</button>
+            </div>
+            <span id="drive-url-status" style="font-size:0.8rem;margin-top:6px;display:block;"></span>
           </div>
         </div>
       </div>
@@ -1448,6 +1503,16 @@ document.addEventListener('DOMContentLoaded', () => {
   // Show clinic key in About page
   const aboutKeyEl = document.getElementById('about-clinic-key');
   if (aboutKeyEl) aboutKeyEl.textContent = CLINIC_KEY;
+
+  // Restore Drive URL into input
+  const savedDriveUrl = localStorage.getItem('joyvet_drive_url');
+  if (savedDriveUrl) {
+    const inp = document.getElementById('drive-script-url');
+    if (inp) inp.value = savedDriveUrl;
+    const badge = document.getElementById('drive-status-badge');
+    if (badge) { badge.textContent = '📁 Drive active'; badge.style.display = 'inline'; }
+  }
+
   // Auto-sync on load (silently in background)
   syncCasesFromCloud();
 
@@ -3399,8 +3464,10 @@ function saveCase() {
   cases.unshift(caseObj);
   localStorage.setItem('joyvet_cases', JSON.stringify(cases));
 
-  // Also sync to cloud if logged in
+  // Clinic cloud sync
   cloudSaveCase(caseObj);
+  // Google Drive backup
+  saveToDrive(caseObj);
 
   // Schedule follow-up reminder if set
   if (caseObj.followupDate) scheduleFollowUpReminder(caseObj);
@@ -3742,6 +3809,49 @@ function dismissReminder(caseId) {
 }
 
 // ── FIREBASE CLOUD SYNC ────────────────────────────────────────────────────
+// ── Google Drive Backup via Apps Script ─────────────────────────────────────
+function saveGoogleDriveUrl() {
+  const url = document.getElementById('drive-script-url')?.value.trim();
+  const status = document.getElementById('drive-url-status');
+  if (!url || !url.startsWith('https://script.google.com')) {
+    if (status) status.textContent = '⚠ Enter a valid Apps Script web app URL.';
+    return;
+  }
+  localStorage.setItem('joyvet_drive_url', url);
+  if (status) { status.textContent = '✓ Saved! Google Drive backup is now active.'; status.style.color = 'var(--success)'; }
+}
+
+function copyAppsScript() {
+  const code = document.getElementById('apps-script-block')?.textContent || '';
+  navigator.clipboard.writeText(code).then(() => {
+    const btn = event.target;
+    const orig = btn.textContent;
+    btn.textContent = '✓ Copied!';
+    setTimeout(() => { btn.textContent = orig; }, 1800);
+  }).catch(() => {
+    alert('Copy failed — please select and copy the code manually.');
+  });
+}
+
+async function saveToDrive(caseObj) {
+  const url = localStorage.getItem('joyvet_drive_url');
+  if (!url) return;
+  const badge = document.getElementById('drive-status-badge');
+  try {
+    if (badge) { badge.textContent = '📁 Saving…'; badge.style.display = 'inline'; }
+    // text/plain avoids CORS preflight — Apps Script reads e.postData.contents
+    await fetch(url, {
+      method:  'POST',
+      mode:    'no-cors',
+      headers: {'Content-Type': 'text/plain'},
+      body:    JSON.stringify(caseObj),
+    });
+    if (badge) { badge.textContent = '📁 Drive ✓'; badge.style.background = '#e8f5e9'; badge.style.color = '#2e7d32'; }
+  } catch(e) {
+    if (badge) { badge.textContent = '📁 Drive ✗'; badge.style.background = '#fee2e2'; badge.style.color = '#b91c1c'; }
+  }
+}
+
 // ── JoyVet Cloud Sync — PythonAnywhere backend ──────────────────────────────
 const PA_SYNC_URL = 'https://joyvetcare.pythonanywhere.com/api/v1/cds/cases/';
 const CLINIC_KEY  = '6d51fab9-2bd6-49c6-b2ab-1eba585e5cc3';
