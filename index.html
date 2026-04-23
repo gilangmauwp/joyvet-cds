@@ -6,6 +6,7 @@
 <title>JoyVet CDS — Clinical Diagnosis Support</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<!-- Cloud sync via JoyVet backend (no external SDK needed) -->
 <style>
 /* ═══════════════════════════════════════════════════════════════════════
    JOYVET CDS — MASTER STYLESHEET
@@ -812,12 +813,92 @@ select { cursor: pointer; }
 
 /* ── PRINT STYLES ─────────────────────────────────────────────────────── */
 /* ── CLIENT PRINT HEADER (hidden on screen, shown on client print) ────── */
-.client-print-header {
-  display: none;
+.client-print-header { display: none; }
+body.client-print-mode .clinical-only-section { display: none !important; }
+
+/* ── FULL RECORD HEADER (injected before print, hidden on screen) ─────── */
+.full-record-header { display: none; }
+
+/* ── DOCTOR NOTES SECTION ──────────────────────────────────────────────── */
+.doctor-notes-card {
+  background: white;
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 6px 6px;
+  margin-top: 0;
 }
-/* ── CLIENT PRINT: hide clinical-only sections ─────────────────────────── */
-body.client-print-mode .clinical-only-section {
-  display: none !important;
+.doctor-notes-card textarea {
+  width: 100%;
+  min-height: 90px;
+  resize: vertical;
+  font-family: inherit;
+  font-size: 0.88rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 8px 10px;
+  color: var(--text);
+  box-sizing: border-box;
+  background: #fafbfd;
+}
+.doctor-notes-card textarea:focus { outline: none; border-color: var(--primary); background: white; }
+.followup-row { display:flex;gap:10px;align-items:center;margin-top:8px;flex-wrap:wrap; }
+.followup-row label { font-size:0.82rem;color:var(--text-muted);white-space:nowrap; }
+.followup-row input[type=date] { border:1px solid var(--border);border-radius:4px;padding:5px 8px;font-family:inherit;font-size:0.82rem; }
+
+/* ── CASE HISTORY CARD ─────────────────────────────────────────────────── */
+.case-card {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  background: white;
+  transition: box-shadow 0.15s;
+}
+.case-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+.case-card-top { display:flex;gap:10px;align-items:flex-start; }
+.case-card-body { font-size:0.82rem;color:var(--text-muted);margin-top:6px;line-height:1.5; }
+.case-card-actions { display:flex;gap:6px;margin-top:10px;flex-wrap:wrap; }
+.case-card-actions button { font-size:0.78rem;padding:4px 10px; }
+.diagnosis-pill {
+  display:inline-block;background:#eef2fa;color:var(--primary);
+  font-size:0.75rem;font-weight:600;padding:2px 8px;border-radius:10px;margin-top:4px;
+}
+
+/* ── CASE DETAIL MODAL ─────────────────────────────────────────────────── */
+.case-modal-overlay {
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:3000;
+  align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;
+}
+.case-modal-overlay.show { display:flex; }
+.case-modal {
+  background:white;border-radius:10px;width:100%;max-width:700px;
+  box-shadow:0 20px 60px rgba(0,0,0,0.2);margin:auto;
+}
+.case-modal-header {
+  display:flex;align-items:center;justify-content:space-between;
+  padding:16px 20px;border-bottom:1px solid var(--border);
+  background:var(--primary);color:white;border-radius:10px 10px 0 0;
+}
+.case-modal-body { padding:20px;max-height:70vh;overflow-y:auto; }
+.case-field-row { display:grid;grid-template-columns:1fr 1fr;gap:6px 16px;font-size:0.84rem;margin-bottom:12px; }
+.case-field-row span { color:var(--text-muted); }
+.case-field-row strong { color:var(--text); }
+.case-section-label { font-weight:700;font-size:0.78rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--primary);margin:14px 0 6px; }
+
+/* ── CLOUD SYNC BADGE ──────────────────────────────────────────────────── */
+.cloud-badge {
+  display:inline-flex;align-items:center;gap:4px;font-size:0.72rem;
+  padding:2px 8px;border-radius:10px;font-weight:600;
+}
+.cloud-badge.online { background:#d1fae5;color:#065f46; }
+.cloud-badge.offline { background:#fee2e2;color:#991b1b; }
+.cloud-badge.syncing { background:#dbeafe;color:#1e40af; }
+
+/* ── REMINDER BANNER ───────────────────────────────────────────────────── */
+.reminder-banner {
+  background:#fff8e1;border:1px solid #ffc107;border-left:4px solid #f59e0b;
+  border-radius:4px;padding:10px 14px;margin-bottom:12px;font-size:0.84rem;
+  display:flex;gap:10px;align-items:flex-start;
 }
 
 @media print {
@@ -833,22 +914,29 @@ body.client-print-mode .clinical-only-section {
   .card { box-shadow: none; border: 1px solid #ccc; }
   @page { margin: 1.5cm; size: A4; }
 
-  /* Full record print: show everything except toolbar */
+  /* Full record print: show full-record-header + all result sections */
+  body.full-print-mode .full-record-header { display: block !important; }
+  body.full-print-mode .results-header { display: none !important; }
   body:not(.client-print-mode) #warnings-results { display: block !important; }
   body:not(.client-print-mode) .client-print-header { display: none !important; }
 
-  /* CLIENT PRINT: show working diagnosis (sec 3) + treatment (sec 4) + education (sec 5) + client header */
+  /* CLIENT PRINT: show working diagnosis + treatment + education + client header */
   body.client-print-mode .clinical-only-section { display: none !important; }
   body.client-print-mode #warnings-results { display: none !important; }
   body.client-print-mode .client-print-header { display: block !important; }
   body.client-print-mode .results-header { display: none !important; }
+  body.client-print-mode .doctor-notes-print { display: none !important; }
 
-  /* Horizontal columns flatten on print */
+  /* Shared print formatting */
   .treatment-columns { grid-template-columns: 1fr !important; }
   .treatment-col { break-inside: avoid; }
   .result-section-header { cursor: default; }
   .ddx-item.ddx-selected { background: #eef2fa !important; }
   .dose-calc { background: #fffde7; border: 1px solid #f9a825; padding: 1px 4px; border-radius: 3px; font-size: 0.85em; }
+  .doctor-notes-card { break-inside: avoid; }
+  .full-record-summary-table { border-collapse:collapse;width:100%;font-size:0.82rem;margin-bottom:12px; }
+  .full-record-summary-table td { padding:4px 8px;border:1px solid #ccc;vertical-align:top; }
+  .full-record-summary-table td:first-child { font-weight:600;background:#f4f6fb;width:35%; }
 }
 
 /* ── ABOUT ─────────────────────────────────────────────────────────── */
@@ -1226,10 +1314,10 @@ body.client-print-mode .clinical-only-section {
         <button class="btn btn-ghost" onclick="prevStep()">← Back to Vitals</button>
         <button class="btn btn-outline" onclick="copyToClipboard()">📋 Copy</button>
         <button class="btn btn-outline" onclick="printRecord()">🖨 Full Record</button>
-        <button class="btn" style="background:var(--primary);color:white;font-weight:600;gap:6px;" onclick="printForClient()">
-          📄 Print / Send to Client
+        <button class="btn" style="background:var(--primary);color:white;font-weight:600;" onclick="printForClient()">
+          📄 Print for Client
         </button>
-        <button class="btn btn-ghost" onclick="saveCase()">💾 Save</button>
+        <button class="btn btn-ghost" onclick="saveCase()" style="font-weight:600;">💾 Save Case</button>
       </div>
       <div id="warnings-results"></div>
       <div id="results-panel"></div>
@@ -1237,10 +1325,21 @@ body.client-print-mode .clinical-only-section {
 
     <!-- ══════════════════════ CASE HISTORY VIEW ════════════════════════ -->
     <div class="view" id="view-history">
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">Case History (Last 10 Sessions)</div>
-          <button class="btn-quick-normal" onclick="clearHistory()" style="color:var(--danger);border-color:var(--danger);">Clear All</button>
+      <div id="reminder-banner-container"></div>
+      <div class="card" style="margin-bottom:12px;">
+        <div class="card-header" style="flex-wrap:wrap;gap:8px;">
+          <div class="card-title">Case History</div>
+          <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+            <span id="cloud-status-badge" class="cloud-badge offline">● Offline</span>
+            <button class="btn-quick-normal" onclick="showCloudLogin()" id="cloud-login-btn">☁ Cloud Sync</button>
+            <button class="btn-quick-normal" onclick="exportAllCases()">⬇ Export JSON</button>
+            <button class="btn-quick-normal" onclick="document.getElementById('import-file').click()">⬆ Import</button>
+            <input type="file" id="import-file" accept=".json" style="display:none" onchange="importCases(this)">
+            <button class="btn-quick-normal" onclick="clearHistory()" style="color:var(--danger);border-color:var(--danger);">Clear All</button>
+          </div>
+        </div>
+        <div class="card-body" style="padding:8px 16px;border-bottom:1px solid var(--border);">
+          <input type="text" id="history-search" placeholder="Search by patient name, owner, or diagnosis..." style="width:100%;box-sizing:border-box;padding:7px 10px;border:1px solid var(--border);border-radius:4px;font-family:inherit;font-size:0.85rem;">
         </div>
         <div class="card-body" id="history-list">
           <div class="empty-state"><div class="empty-icon">📂</div><p>No saved cases yet.</p></div>
@@ -1264,7 +1363,14 @@ body.client-print-mode .clinical-only-section {
           <h2>How to Use (Offline)</h2>
           <p>1. Copy the JoyVet-CDS folder to your device (USB, local drive, LAN share).<br>
           2. Double-click index.html to open in any modern browser (Chrome, Firefox, Edge, Safari).<br>
-          3. No internet connection required. Case data is saved locally in your browser's localStorage.</p>
+          3. Case data saved locally. Use Cloud Sync in Case History to save online.</p>
+          <h2>☁ Cloud Sync</h2>
+          <p>Cases sync automatically to the JoyVet clinic server — no setup required.</p>
+          <div style="background:#f4f6fb;border-radius:6px;padding:14px;margin-top:10px;">
+            <div style="font-weight:700;font-size:0.82rem;margin-bottom:6px;">Clinic Sync Key</div>
+            <div style="font-family:monospace;font-size:0.82rem;word-break:break-all;color:var(--primary);" id="about-clinic-key"></div>
+            <p style="font-size:0.78rem;color:var(--text-muted);margin-top:6px;">This key identifies your clinic. All devices that share this file will sync to the same cloud database.</p>
+          </div>
         </div>
       </div>
     </div>
@@ -1280,6 +1386,40 @@ body.client-print-mode .clinical-only-section {
     <div class="btn-row">
       <button class="btn btn-ghost" onclick="closeConfirm()">Cancel</button>
       <button class="btn btn-primary" id="confirm-ok-btn">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ CASE DETAIL MODAL ══════════════ -->
+<div class="case-modal-overlay" id="case-detail-overlay">
+  <div class="case-modal">
+    <div class="case-modal-header">
+      <span style="font-weight:700;font-size:1rem;">📋 Case Record</span>
+      <button onclick="closeCaseDetail()" style="background:none;border:none;color:white;font-size:1.3rem;cursor:pointer;">×</button>
+    </div>
+    <div class="case-modal-body" id="case-detail-body"></div>
+    <div style="padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;">
+      <button class="btn btn-ghost" onclick="closeCaseDetail()">Close</button>
+      <button class="btn btn-outline" id="case-detail-print-btn" onclick="printCaseDetail()">🖨 Print</button>
+      <button class="btn" style="background:var(--primary);color:white;" id="case-detail-load-btn" onclick="_currentDetailCaseId && loadCaseIntoForm(_currentDetailCaseId)">↩ Load This Case</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ CLOUD SYNC STATUS MODAL ══════════════ -->
+<div class="case-modal-overlay" id="cloud-login-overlay">
+  <div class="case-modal" style="max-width:420px;">
+    <div class="case-modal-header">
+      <span style="font-weight:700;font-size:1rem;">☁ Cloud Sync</span>
+      <button onclick="document.getElementById('cloud-login-overlay').classList.remove('show')" style="background:none;border:none;color:white;font-size:1.3rem;cursor:pointer;">×</button>
+    </div>
+    <div class="case-modal-body">
+      <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:14px;">Cases sync to the JoyVet clinic server automatically when you save them. Click Sync Now to pull the latest from all devices.</p>
+      <div id="cloud-sync-status" style="font-size:0.85rem;margin-bottom:14px;"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn" style="background:var(--primary);color:white;flex:1;" onclick="syncCasesFromCloud();document.getElementById('cloud-login-overlay').classList.remove('show');">⟳ Sync Now</button>
+        <button class="btn btn-ghost" style="flex:1;" onclick="document.getElementById('cloud-login-overlay').classList.remove('show')">Close</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1305,6 +1445,17 @@ document.addEventListener('DOMContentLoaded', () => {
   loadRecentCases();
   loadAutosave();
   updateSessionStats();
+  // Show clinic key in About page
+  const aboutKeyEl = document.getElementById('about-clinic-key');
+  if (aboutKeyEl) aboutKeyEl.textContent = CLINIC_KEY;
+  // Auto-sync on load (silently in background)
+  syncCasesFromCloud();
+
+  // Case history search
+  const searchEl = document.getElementById('history-search');
+  if (searchEl) {
+    searchEl.addEventListener('input', () => loadRecentCases(searchEl.value));
+  }
 
   // Keyboard shortcuts
   document.addEventListener('keydown', (e) => {
@@ -1313,6 +1464,11 @@ document.addEventListener('DOMContentLoaded', () => {
       if (currentStep >= 0 && currentStep < 3) nextStep();
       else if (currentStep === 3) generateResults();
     }
+  });
+
+  // Close modals on overlay click
+  document.getElementById('case-detail-overlay').addEventListener('click', e => {
+    if (e.target === document.getElementById('case-detail-overlay')) closeCaseDetail();
   });
 
   startAutosave();
@@ -1334,7 +1490,7 @@ function showView(name) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   const navEl = document.getElementById('nav-' + name);
   if (navEl) navEl.classList.add('active');
-  if (name === 'history') loadRecentCases();
+  if (name === 'history') { loadRecentCases(); checkFollowUpReminders(); }
 }
 
 function goToStep(step) {
@@ -1829,8 +1985,14 @@ function buildPhysicalExamForm() {
       title: '8. Integumentary',
       id: 'skin',
       fields: [
-        { label: 'Skin / Coat Condition', id: 'skin_coat', type: 'check', options: ['Normal','Dry/Scaly','Oily/Seborrheic','Alopecia (focal)','Alopecia (diffuse/symmetric)','Pruritus','Erythema','Papules','Pustules','Vesicles','Crusts','Hyperpigmentation','Lichenification','Thickened skin','Poor coat quality'], key: 'skin' },
-        { label: 'Parasites / Wounds / Lesions', id: 'parasites', type: 'check', options: ['None','Fleas visible','Tick attached','Mites suspected','Lacerations','Puncture wounds','Burns','Contusions','Abscess','Ulcerated lesion','Neoplastic-looking mass','Post-surgical wound'], key: 'parasites' },
+        { label: 'Primary Lesion Type', id: 'skin_coat', type: 'check', options: ['Normal','Macule/patch (flat color change)','Papule (<1 cm raised)','Plaque (>1 cm raised)','Pustule (pus-filled)','Vesicle/Bulla (fluid-filled)','Nodule (>1 cm solid)','Wheal/Urticaria','Comedone (blackhead)','Erythema','Pruritus'], key: 'skin' },
+        { label: 'Secondary / Chronic Changes', id: 'skin_secondary', type: 'check', options: ['None','Dry/Scaly','Oily/Seborrheic','Crusts','Excoriation (self-trauma)','Erosion (superficial skin loss)','Ulceration (deep skin loss)','Hyperpigmentation','Hypopigmentation/Depigmentation','Lichenification','Thickened skin','Callus formation','Poor coat quality'], key: 'skin2' },
+        { label: 'Lesion Distribution Pattern', id: 'skin_dist', type: 'radio', options: ['Normal / No pattern','Generalized (whole body)','Bilateral symmetric (endocrine pattern)','Focal / Localized','Dorsal / Truncal','Ventral / Intertriginous (groin, axilla, chin)','Facial / Periocular / Nasal planum','Pedal (feet and paws)','Pinnal (ear flaps)','Pressure points (elbows, hocks)'], key: 'skin_dist' },
+        { label: 'Alopecia Pattern', id: 'skin_alop', type: 'radio', options: ['None','Focal / Patchy','Bilateral symmetric (endocrine)','Post-traumatic / Self-induced','Moth-eaten / Multifocal','Tail / Perineal region','Truncal with normal face/legs'], key: 'skin_alop' },
+        { label: 'Hair / Coat Quality', id: 'skin_hair', type: 'check', options: ['Normal','Dull / Lusterless','Brittle / Breaking easily','Excessive shedding / Telogen effluvium','Rat-tail appearance (tail alopecia)','Follicular casts (scale around hair shafts)','Seborrhea sicca (dry dandruff)','Seborrhea oleosa (greasy)'], key: 'skin_hair' },
+        { label: 'Nail / Claw Findings', id: 'skin_nail', type: 'check', options: ['Normal','Discoloration / Darkening','Brittle / Friable nails','Onychomadesis (nail sloughing/loss)','Paronychia (nail fold inflammation)','Symmetric onychorrhexis (splitting)','Subungual debris'], key: 'skin_nail' },
+        { label: 'Footpad Findings', id: 'skin_pad', type: 'check', options: ['Normal','Hyperkeratosis (thickening)','Cracking / Fissuring','Erosion or Ulceration','Swelling / Edema','Nasodigital hyperkeratosis (nose + pads)','Depigmentation of pads'], key: 'skin_pad' },
+        { label: 'Parasites / Wounds / Other Lesions', id: 'parasites', type: 'check', options: ['None','Fleas visible','Tick attached','Mites suspected','Lacerations','Puncture wounds','Burns','Contusions','Abscess','Ulcerated lesion','Neoplastic-looking mass','Post-surgical wound'], key: 'parasites' },
       ]
     },
   ];
@@ -2148,6 +2310,13 @@ function collectFormData() {
     breed_west_highland:     ['west highland','westie','whtw'],
     breed_scottish_terrier:  ['scottish terrier','scottie'],
     breed_staffordshire:     ['staffordshire','staffy','staffie','american staff','amstaff'],
+    breed_husky:             ['husky','siberian husky','sibe'],
+    breed_malamute:          ['malamute','alaskan malamute'],
+    breed_akita:             ['akita'],
+    breed_gordon_setter:     ['gordon setter','gordon'],
+    breed_samoyed:           ['samoyed','sammy'],
+    breed_chow_chow:         ['chow chow','chow'],
+    breed_keeshond:          ['keeshond'],
   };
   if (breedRaw) {
     Object.entries(BREED_MAP).forEach(([signal, keywords]) => {
@@ -2185,20 +2354,75 @@ function collectFormData() {
   if (formData['attitude_dull_depressed']) formData.attitude_dull = true;
   if (formData['attitude_obtunded']) formData.attitude_obtunded = true;
 
-  // Skin signals
+  // Skin signals — primary lesions
   if (formData['skin_pruritus']) formData.skin_pruritus = true;
   if (formData['skin_erythema']) formData.skin_erythema = true;
+  if (formData['skin_papule___1_cm_raised_']) formData.skin_papules = true;
+  if (formData['skin_plaque___1_cm_raised_']) formData.skin_papules = true;
+  if (formData['skin_pustule__pus_filled_']) formData.skin_pustules = true;
+  if (formData['skin_vesicle_bulla__fluid_filled_']) formData.skin_vesicles = true;
+  if (formData['skin_nodule___1_cm_solid_']) formData.skin_nodule = true;
+  if (formData['skin_wheal_urticaria']) formData.skin_urticaria = true;
+  if (formData['skin_comedone__blackhead_']) formData.skin_comedone = true;
+
+  // Secondary / chronic changes
+  if (formData['skin2_dry_scaly']) formData.skin_dry = true;
+  if (formData['skin2_oily_seborrheic']) formData.skin_oily = true;
+  if (formData['skin2_crusts']) formData.skin_crusts = true;
+  if (formData['skin2_excoriation__self_trauma_']) formData.skin_self_trauma = true;
+  if (formData['skin2_erosion__superficial_skin_loss_']) formData.skin_erosion = true;
+  if (formData['skin2_ulceration__deep_skin_loss_']) formData.skin_ulcer = true;
+  if (formData['skin2_hyperpigmentation']) formData.skin_hyperpigmentation = true;
+  if (formData['skin2_hypopigmentation_depigmentation']) formData.skin_depigmentation = true;
+  if (formData['skin2_lichenification']) formData.skin_lichenification = true;
+  if (formData['skin2_thickened_skin']) formData.skin_thickened = true;
+  if (formData['skin2_poor_coat_quality']) formData.skin_poor_coat = true;
+
+  // Legacy skin_coat key compatibility
   if (formData['skin_alopecia__focal_']) formData.skin_alopecia_focal = true;
   if (formData['skin_alopecia__diffuse_symmetric_']) formData.skin_alopecia_diffuse = true;
-  if (formData['skin_papules']) formData.skin_papules = true;
-  if (formData['skin_pustules']) formData.skin_pustules = true;
-  if (formData['skin_crusts']) formData.skin_crusts = true;
-  if (formData['skin_hyperpigmentation']) formData.skin_hyperpigmentation = true;
-  if (formData['skin_lichenification']) formData.skin_lichenification = true;
-  if (formData['skin_thickened_skin']) formData.skin_thickened = true;
-  if (formData['skin_dry_scaly']) formData.skin_dry = true;
-  if (formData['skin_oily_seborrheic']) formData.skin_oily = true;
-  if (formData['skin_poor_coat_quality']) formData.skin_poor_coat = true;
+
+  // Lesion distribution pattern
+  if (formData['skin_dist_bilateral_symmetric__endocrine_pattern_']) formData.skin_bilateral_symmetric = true;
+  if (formData['skin_dist_generalized__whole_body_']) formData.skin_generalized = true;
+  if (formData['skin_dist_focal___localized']) formData.skin_focal_lesion = true;
+  if (formData['skin_dist_ventral___intertriginous__groin__axilla__chin_']) formData.skin_ventral = true;
+  if (formData['skin_dist_facial___periocular___nasal_planum']) formData.skin_facial = true;
+  if (formData['skin_dist_pedal__feet_and_paws_']) formData.skin_pedal = true;
+  if (formData['skin_dist_dorsal___truncal']) formData.skin_dorsal = true;
+  if (formData['skin_dist_pinnal__ear_flaps_']) formData.skin_pinnal = true;
+  if (formData['skin_dist_pressure_points__elbows__hocks_']) formData.skin_pressure_points = true;
+
+  // Alopecia pattern
+  if (formData['skin_alop_bilateral_symmetric__endocrine_']) formData.skin_alopecia_diffuse = true;
+  if (formData['skin_alop_bilateral_symmetric__endocrine_']) formData.skin_bilateral_symmetric = true;
+  if (formData['skin_alop_focal___patchy']) formData.skin_alopecia_focal = true;
+  if (formData['skin_alop_moth_eaten___multifocal']) formData.skin_alopecia_focal = true;
+  if (formData['skin_alop_post_traumatic___self_induced']) formData.skin_self_trauma = true;
+  if (formData['skin_alop_truncal_with_normal_face_legs']) formData.skin_alopecia_diffuse = true;
+  if (formData['skin_alop_truncal_with_normal_face_legs']) formData.skin_bilateral_symmetric = true;
+
+  // Hair quality
+  if (formData['skin_hair_brittle___breaking_easily']) formData.skin_poor_coat = true;
+  if (formData['skin_hair_dull___lusterless']) formData.skin_poor_coat = true;
+  if (formData['skin_hair_follicular_casts__scale_around_hair_shafts_']) formData.skin_follicular_casts = true;
+  if (formData['skin_hair_seborrhea_sicca__dry_dandruff_']) formData.skin_dry = true;
+  if (formData['skin_hair_seborrhea_oleosa__greasy_']) formData.skin_oily = true;
+  if (formData['skin_hair_rat_tail_appearance__tail_alopecia_']) formData.skin_alopecia_focal = true;
+
+  // Nail / claw
+  if (formData['skin_nail_brittle___friable_nails']) formData.skin_nail_brittle = true;
+  if (formData['skin_nail_onychomadesis__nail_sloughing_loss_']) formData.skin_onychomadesis = true;
+  if (formData['skin_nail_paronychia__nail_fold_inflammation_']) formData.skin_paronychia = true;
+  if (formData['skin_nail_symmetric_onychorrhexis__splitting_']) formData.skin_onychomadesis = true;
+
+  // Footpad
+  if (formData['skin_pad_hyperkeratosis__thickening_']) formData.skin_pad_hyperkeratosis = true;
+  if (formData['skin_pad_cracking___fissuring']) formData.skin_pad_cracking = true;
+  if (formData['skin_pad_erosion_or_ulceration']) formData.skin_pad_ulcer = true;
+  if (formData['skin_pad_nasodigital_hyperkeratosis__nose___pads_']) formData.skin_pad_hyperkeratosis = true;
+  if (formData['skin_pad_nasodigital_hyperkeratosis__nose___pads_']) formData.skin_pad_nasodigital = true;
+  if (formData['skin_pad_depigmentation_of_pads']) formData.skin_depigmentation = true;
 
   // Parasites
   if (formData['parasites_fleas_visible']) formData.parasites_fleas = true;
@@ -2624,6 +2848,22 @@ function renderResults(ranked, warnings) {
   eduSec.appendChild(eduBody);
   panel.appendChild(eduSec);
 
+  // ── 6. DOCTOR'S NOTES & FOLLOW-UP (clinical-only, not on client print) ──
+  const notesSec = document.createElement('div');
+  notesSec.className = 'doctor-notes-card clinical-only-section doctor-notes-print';
+  notesSec.style.cssText = 'padding:16px 20px;';
+  const prevNotes = (window._lastSavedCase && window._lastSavedCase.doctorNotes) || '';
+  const prevFollowup = (window._lastSavedCase && window._lastSavedCase.followupDate) || '';
+  notesSec.innerHTML = `
+    <div style="font-weight:700;font-size:0.88rem;color:var(--primary);margin-bottom:8px;">6. 📝 DOCTOR'S NOTES & CLINICAL COMMENTS</div>
+    <textarea id="doctor_comments" placeholder="Add clinical observations, differential reasoning, treatment decisions, owner communication notes...">${prevNotes}</textarea>
+    <div class="followup-row">
+      <label for="followup_date">📅 Schedule Follow-Up:</label>
+      <input type="date" id="followup_date" value="${prevFollowup}">
+      <span style="font-size:0.79rem;color:var(--text-muted);">Reminder will appear on app open</span>
+    </div>`;
+  panel.appendChild(notesSec);
+
   // Populate sections with DDx #1 initially
   selectDdx(0);
 }
@@ -2710,7 +2950,15 @@ function selectDdx(idx) {
       return col;
     };
 
-    const medCol  = makeCol('Medications', '💊', t.medications, true);
+    // Filter medications by patient species — remove dog-only meds for cats, etc.
+    const _sp = (formData && formData.species) || '';
+    const _meds = (t.medications || []).filter(med => {
+      if (/\(dogs?\)\s*$/i.test(med)) return _sp === 'dog';
+      if (/\(cats?\)\s*$/i.test(med)) return _sp === 'cat';
+      if (/\(rabbits?\)\s*$/i.test(med)) return _sp === 'rabbit';
+      return true;
+    }).concat((_sp && Array.isArray(t[_sp + '_medications'])) ? t[_sp + '_medications'] : []);
+    const medCol  = makeCol('Medications', '💊', _meds.length ? _meds : (t.medications || []), true);
     const procCol = makeCol('Procedures', '🩺', t.procedures, false);
     const dietCol = makeCol('Dietary', '🥗', t.diet, false);
     if (medCol)  cols.appendChild(medCol);
@@ -2777,7 +3025,69 @@ function copyToClipboard() {
 function printRecord() {
   if (currentStep !== 4) goToStep(4);
   document.body.classList.remove('client-print-mode');
-  setTimeout(() => window.print(), 300);
+
+  // Build full record header with patient info + clinical summary
+  const pName    = document.getElementById('f_patient_name').value || 'Unknown';
+  const pOwner   = document.getElementById('f_owner_name').value || '';
+  const pSpecies = document.getElementById('f_species').value || '';
+  const pBreed   = document.getElementById('f_breed').value || '';
+  const pAgeY    = document.getElementById('f_age_years').value || '0';
+  const pAgeM    = document.getElementById('f_age_months').value || '0';
+  const pSex     = (document.getElementById('f_sex').value || '').replace(/_/g,' ');
+  const pWeight  = document.getElementById('f_weight').value || '';
+  const pDate    = document.getElementById('f_visit_date').value || '';
+  const pCaseNo  = document.getElementById('f_case_no').value || '';
+  const pNotes   = document.getElementById('f_history_notes')?.value || '';
+  const docNotes = document.getElementById('doctor_comments')?.value || '';
+  const fuDate   = document.getElementById('followup_date')?.value || '';
+
+  // Collect key complaints from formData
+  const complaints = Object.keys(formData).filter(k => k.startsWith('complaints_') && formData[k] === true)
+    .map(k => k.replace('complaints_','').replace(/_/g,' '));
+
+  // Get top DDx name
+  const topDdxEl = document.querySelector('#wd-body-content [style*="font-weight:800"]');
+  const topDdx = topDdxEl ? topDdxEl.textContent.trim() : '';
+
+  // Expand all result sections for print
+  document.querySelectorAll('.result-section-body').forEach(b => b.classList.add('open'));
+
+  let hdr = document.getElementById('full-record-header');
+  if (!hdr) {
+    hdr = document.createElement('div');
+    hdr.id = 'full-record-header';
+    hdr.className = 'full-record-header';
+    const panel = document.getElementById('results-panel');
+    panel.insertBefore(hdr, panel.firstChild);
+  }
+  hdr.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid #334f84;padding-bottom:10px;margin-bottom:14px;">
+      <div style="font-size:1.2rem;font-weight:800;color:#334f84;">JOY VETERINARY CARE</div>
+      <div style="text-align:right;font-size:0.8rem;color:#5a6a8a;">
+        <div><strong>MEDICAL RECORD — CONFIDENTIAL</strong></div>
+        <div>Date: ${pDate}${pCaseNo?' | Case No: '+pCaseNo:''}</div>
+      </div>
+    </div>
+    <table class="full-record-summary-table">
+      <tr><td>Patient Name</td><td>${pName}</td><td>Owner</td><td>${pOwner||'—'}</td></tr>
+      <tr><td>Species / Breed</td><td>${pSpecies} ${pBreed}</td><td>Age / Sex</td><td>${pAgeY}y ${pAgeM}m · ${pSex}</td></tr>
+      <tr><td>Weight</td><td>${pWeight?pWeight+' kg':'—'}</td><td>Working Diagnosis</td><td><strong>${topDdx||'Pending'}</strong></td></tr>
+      ${complaints.length?`<tr><td>Chief Complaints</td><td colspan="3">${complaints.join(', ')}</td></tr>`:''}
+      ${pNotes?`<tr><td>History Notes</td><td colspan="3">${pNotes}</td></tr>`:''}
+    </table>
+    ${docNotes?`<div style="background:#fff8e1;border-left:3px solid #f59e0b;padding:8px 12px;margin-bottom:12px;font-size:0.83rem;"><strong>Doctor's Notes:</strong> ${docNotes}</div>`:''}
+    ${fuDate?`<div style="background:#d1fae5;border-left:3px solid #059669;padding:6px 12px;margin-bottom:12px;font-size:0.82rem;"><strong>Follow-Up Scheduled:</strong> ${fuDate}</div>`:''}
+  `;
+
+  document.body.classList.add('full-print-mode');
+  setTimeout(() => {
+    window.print();
+    const afterPrint = () => {
+      document.body.classList.remove('full-print-mode');
+      window.removeEventListener('afterprint', afterPrint);
+    };
+    window.addEventListener('afterprint', afterPrint);
+  }, 300);
 }
 
 function printForClient() {
@@ -2845,71 +3155,296 @@ function printForClient() {
 }
 
 // ── CASE HISTORY ───────────────────────────────────────────────────────────
-function saveCase() {
+function buildCaseObject() {
   const patientName = document.getElementById('f_patient_name').value || 'Unknown';
-  const species = document.getElementById('f_species').value;
-  const visitDate = document.getElementById('f_visit_date').value;
-  const results = document.getElementById('results-panel').innerText.substring(0, 500);
+  const ownerName   = document.getElementById('f_owner_name').value || '';
+  const species     = document.getElementById('f_species').value;
+  const breed       = document.getElementById('f_breed').value || '';
+  const ageY        = document.getElementById('f_age_years').value || '0';
+  const ageM        = document.getElementById('f_age_months').value || '0';
+  const sex         = document.getElementById('f_sex').value || '';
+  const weight      = document.getElementById('f_weight').value || '';
+  const visitDate   = document.getElementById('f_visit_date').value;
+  const caseNo      = document.getElementById('f_case_no').value || '';
+  const histNotes   = document.getElementById('f_history_notes')?.value || '';
+  const doctorNotes = document.getElementById('doctor_comments')?.value || '';
+  const followupDate= document.getElementById('followup_date')?.value || '';
 
-  const caseObj = {
+  // Top DDx from results
+  const topDdxEl = document.querySelector('#wd-body-content [style*="font-weight:800"]');
+  const topDiagnosis = topDdxEl ? topDdxEl.textContent.trim() : '';
+
+  // Key complaints
+  const complaints = Object.keys(formData)
+    .filter(k => k.startsWith('complaints_') && formData[k] === true)
+    .map(k => k.replace('complaints_','').replace(/_/g,' '));
+
+  // Key PE findings
+  const skinFindings = Object.keys(formData)
+    .filter(k => k.startsWith('skin_') && formData[k] === true && !k.endsWith('_normal'))
+    .map(k => k.replace('skin_','').replace(/_/g,' ')).slice(0,8);
+
+  return {
     id: Date.now(),
-    patientName, species, visitDate,
-    preview: results,
-    formData: JSON.stringify(formData).substring(0, 2000)
+    patientName, ownerName, species, breed,
+    age: `${ageY}y ${ageM}m`, sex, weight, visitDate, caseNo,
+    histNotes, doctorNotes, followupDate,
+    topDiagnosis, complaints, skinFindings,
+    formData: JSON.parse(JSON.stringify(formData)), // full deep copy
+    savedAt: new Date().toISOString()
   };
+}
+
+function saveCase() {
+  const caseObj = buildCaseObject();
+  window._lastSavedCase = caseObj;
 
   let cases = JSON.parse(localStorage.getItem('joyvet_cases') || '[]');
+  // Replace if same visit (same date + patient)
+  const existIdx = cases.findIndex(c => c.patientName === caseObj.patientName && c.visitDate === caseObj.visitDate);
+  if (existIdx >= 0) cases.splice(existIdx, 1);
   cases.unshift(caseObj);
-  cases = cases.slice(0, 10);
   localStorage.setItem('joyvet_cases', JSON.stringify(cases));
-  alert('Case saved to history.');
+
+  // Also sync to cloud if logged in
+  cloudSaveCase(caseObj);
+
+  // Schedule follow-up reminder if set
+  if (caseObj.followupDate) scheduleFollowUpReminder(caseObj);
+
+  const btn = event.target;
+  const orig = btn.textContent;
+  btn.textContent = '✓ Saved!';
+  btn.style.color = 'var(--success)';
+  setTimeout(() => { btn.textContent = orig; btn.style.color = ''; }, 2000);
   loadRecentCases();
 }
 
-function loadRecentCases() {
-  const cases = JSON.parse(localStorage.getItem('joyvet_cases') || '[]');
+function loadRecentCases(filterText) {
+  let cases = JSON.parse(localStorage.getItem('joyvet_cases') || '[]');
   const list = document.getElementById('history-list');
   const recentList = document.getElementById('recent-cases-list');
 
-  if (cases.length === 0) {
-    list.innerHTML = '<div class="empty-state"><div class="empty-icon">📂</div><p>No saved cases yet.</p></div>';
-    recentList.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><p>No cases recorded yet.</p></div>';
-    return;
+  if (filterText) {
+    const q = filterText.toLowerCase();
+    cases = cases.filter(c =>
+      (c.patientName||'').toLowerCase().includes(q) ||
+      (c.ownerName||'').toLowerCase().includes(q) ||
+      (c.topDiagnosis||'').toLowerCase().includes(q) ||
+      (c.breed||'').toLowerCase().includes(q)
+    );
   }
 
-  const makeList = (container) => {
+  const renderList = (container) => {
+    if (!container) return;
     container.innerHTML = '';
+    if (cases.length === 0) {
+      container.innerHTML = '<div class="empty-state"><div class="empty-icon">📂</div><p>No cases found.</p></div>';
+      return;
+    }
     cases.forEach(c => {
-      const item = document.createElement('div');
-      item.className = 'case-item';
-      item.innerHTML = `
-        <span style="font-size:1.2rem;">${SPECIES_ICONS[c.species] || '🐾'}</span>
-        <div style="flex:1">
-          <div style="font-weight:600;font-size:0.88rem;">${c.patientName}</div>
-          <div class="case-meta">${c.species} · ${c.visitDate}</div>
+      const card = document.createElement('div');
+      card.className = 'case-card';
+      card.innerHTML = `
+        <div class="case-card-top">
+          <span style="font-size:1.4rem;">${SPECIES_ICONS[c.species] || '🐾'}</span>
+          <div style="flex:1">
+            <div style="font-weight:700;font-size:0.92rem;">${c.patientName}</div>
+            <div style="font-size:0.8rem;color:var(--text-muted);">${c.ownerName ? 'Owner: '+c.ownerName+' · ' : ''}${c.species}${c.breed?' ('+c.breed+')':''} · ${c.age||''} · ${c.visitDate}</div>
+            ${c.topDiagnosis ? `<div class="diagnosis-pill">Dx: ${c.topDiagnosis}</div>` : ''}
+          </div>
+          ${c.caseNo ? `<div style="font-size:0.75rem;color:var(--text-muted);text-align:right;">Case #${c.caseNo}</div>` : ''}
         </div>
-        <button class="btn-quick-normal" onclick="deleteCaseById(${c.id})" style="color:var(--danger);border-color:var(--danger);">Del</button>
-      `;
-      container.appendChild(item);
+        ${c.doctorNotes ? `<div class="case-card-body"style="background:#fffbeb;border-left:2px solid #fbbf24;padding:5px 8px;border-radius:0 3px 3px 0;margin-top:6px;">📝 ${c.doctorNotes.substring(0,120)}${c.doctorNotes.length>120?'...':''}</div>` : ''}
+        ${c.followupDate ? `<div style="font-size:0.78rem;color:#065f46;background:#d1fae5;padding:3px 8px;border-radius:3px;margin-top:5px;display:inline-block;">📅 Follow-up: ${c.followupDate}</div>` : ''}
+        <div class="case-card-actions">
+          <button class="btn btn-outline" onclick="viewCaseDetail(${c.id})">👁 View Full Record</button>
+          <button class="btn btn-ghost" onclick="loadCaseIntoForm(${c.id})">↩ Load</button>
+          <button class="btn-quick-normal" onclick="deleteCaseById(${c.id})" style="color:var(--danger);border-color:var(--danger);">Delete</button>
+        </div>`;
+      container.appendChild(card);
     });
   };
 
-  makeList(list);
-  makeList(recentList);
+  renderList(list);
+  renderList(recentList);
+}
+
+let _currentDetailCaseId = null;
+function viewCaseDetail(id) {
+  const cases = JSON.parse(localStorage.getItem('joyvet_cases') || '[]');
+  const c = cases.find(c => c.id === id);
+  if (!c) return;
+  _currentDetailCaseId = id;
+
+  const body = document.getElementById('case-detail-body');
+  body.innerHTML = `
+    <div class="case-section-label">Patient Information</div>
+    <div class="case-field-row">
+      <span>Patient Name:</span><strong>${c.patientName}</strong>
+      <span>Owner:</span><strong>${c.ownerName||'—'}</strong>
+    </div>
+    <div class="case-field-row">
+      <span>Species / Breed:</span><strong>${c.species} ${c.breed||''}</strong>
+      <span>Age / Sex:</span><strong>${c.age||'—'} · ${(c.sex||'').replace(/_/g,' ')}</strong>
+    </div>
+    <div class="case-field-row">
+      <span>Weight:</span><strong>${c.weight?c.weight+' kg':'—'}</strong>
+      <span>Visit Date:</span><strong>${c.visitDate}</strong>
+    </div>
+    <div class="case-field-row">
+      <span>Case No.:</span><strong>${c.caseNo||'—'}</strong>
+      <span>Saved At:</span><strong>${c.savedAt?new Date(c.savedAt).toLocaleString():'—'}</strong>
+    </div>
+
+    ${c.complaints&&c.complaints.length ? `
+    <div class="case-section-label">Chief Complaints</div>
+    <div style="font-size:0.84rem;line-height:1.7;color:var(--text);">${c.complaints.join(' · ')}</div>` : ''}
+
+    ${c.histNotes ? `
+    <div class="case-section-label">History Notes</div>
+    <div style="font-size:0.84rem;line-height:1.6;white-space:pre-wrap;color:var(--text);">${c.histNotes}</div>` : ''}
+
+    ${c.skinFindings&&c.skinFindings.length ? `
+    <div class="case-section-label">Key Physical Exam Findings</div>
+    <div style="font-size:0.84rem;line-height:1.7;color:var(--text);">${c.skinFindings.join(' · ')}</div>` : ''}
+
+    <div class="case-section-label">Diagnosis & Results</div>
+    <div style="font-size:0.95rem;font-weight:700;color:var(--primary);margin-bottom:6px;">${c.topDiagnosis||'—'}</div>
+
+    ${c.doctorNotes ? `
+    <div class="case-section-label">Doctor's Notes</div>
+    <div style="font-size:0.84rem;line-height:1.7;white-space:pre-wrap;background:#fffbeb;border-left:3px solid #fbbf24;padding:8px 12px;border-radius:0 4px 4px 0;">${c.doctorNotes}</div>` : ''}
+
+    ${c.followupDate ? `
+    <div class="case-section-label">Follow-Up</div>
+    <div style="font-size:0.85rem;background:#d1fae5;padding:7px 12px;border-radius:4px;color:#065f46;font-weight:600;">📅 Scheduled: ${c.followupDate}</div>` : ''}
+  `;
+
+  document.getElementById('case-detail-overlay').classList.add('show');
+}
+
+function closeCaseDetail() {
+  document.getElementById('case-detail-overlay').classList.remove('show');
+}
+
+function printCaseDetail() {
+  const cases = JSON.parse(localStorage.getItem('joyvet_cases') || '[]');
+  const c = cases.find(c => c.id === _currentDetailCaseId);
+  if (!c) return;
+  const w = window.open('', '_blank', 'width=800,height=900');
+  w.document.write(`<html><head><title>Case Record — ${c.patientName}</title>
+    <style>body{font-family:Inter,sans-serif;padding:20px;font-size:14px;line-height:1.6}
+    h1{color:#334f84;font-size:1.1rem}table{border-collapse:collapse;width:100%;margin-bottom:10px}
+    td{border:1px solid #ccc;padding:5px 8px}td:first-child{font-weight:600;background:#f4f6fb;width:30%}
+    .section{font-weight:700;font-size:0.75rem;text-transform:uppercase;color:#334f84;margin:12px 0 4px}
+    .notes{background:#fffbeb;border-left:3px solid #fbbf24;padding:8px;border-radius:0 4px 4px 0}</style>
+    </head><body>
+    <div style="border-bottom:3px solid #334f84;padding-bottom:8px;margin-bottom:14px;">
+      <div style="font-size:1.3rem;font-weight:800;color:#334f84;">JOY VETERINARY CARE — MEDICAL RECORD</div>
+      <div style="font-size:0.8rem;color:#5a6a8a;">CONFIDENTIAL · ${c.visitDate}</div>
+    </div>
+    <table>
+      <tr><td>Patient</td><td>${c.patientName}</td></tr>
+      <tr><td>Owner</td><td>${c.ownerName||'—'}</td></tr>
+      <tr><td>Species / Breed</td><td>${c.species} ${c.breed||''}</td></tr>
+      <tr><td>Age / Sex / Weight</td><td>${c.age||'—'} · ${(c.sex||'').replace(/_/g,' ')} · ${c.weight?c.weight+' kg':'—'}</td></tr>
+      <tr><td>Case No.</td><td>${c.caseNo||'—'}</td></tr>
+      <tr><td>Working Diagnosis</td><td><strong>${c.topDiagnosis||'—'}</strong></td></tr>
+      ${c.complaints&&c.complaints.length?`<tr><td>Chief Complaints</td><td>${c.complaints.join(', ')}</td></tr>`:''}
+      ${c.followupDate?`<tr><td>Follow-Up Date</td><td>${c.followupDate}</td></tr>`:''}
+    </table>
+    ${c.histNotes?`<div class="section">History Notes</div><p>${c.histNotes}</p>`:''}
+    ${c.doctorNotes?`<div class="section">Doctor's Notes</div><div class="notes">${c.doctorNotes}</div>`:''}
+    <div style="margin-top:20px;font-size:0.75rem;color:#888;">Printed from JoyVet CDS · ${new Date().toLocaleString()}</div>
+    </body></html>`);
+  w.document.close();
+  setTimeout(() => w.print(), 300);
+}
+
+function loadCaseIntoForm(id) {
+  const cases = JSON.parse(localStorage.getItem('joyvet_cases') || '[]');
+  const c = cases.find(c => c.id === id);
+  if (!c) return;
+  showConfirm('Load Case', `Load case for "${c.patientName}" (${c.visitDate})? Current data will be replaced.`, () => {
+    closeCaseDetail();
+    // Restore form fields
+    document.getElementById('f_patient_name').value = c.patientName || '';
+    document.getElementById('f_owner_name').value = c.ownerName || '';
+    if (c.species) document.getElementById('f_species').value = c.species;
+    document.getElementById('f_breed').value = c.breed || '';
+    document.getElementById('f_age_years').value = (c.age||'').split('y')[0]?.trim() || '';
+    document.getElementById('f_age_months').value = ((c.age||'').split('y')[1]||'').replace('m','').trim() || '';
+    if (c.sex) document.getElementById('f_sex').value = c.sex;
+    document.getElementById('f_weight').value = c.weight || '';
+    document.getElementById('f_case_no').value = c.caseNo || '';
+    // Restore formData
+    formData = c.formData ? JSON.parse(JSON.stringify(c.formData)) : {};
+    window._lastSavedCase = c;
+    updatePatientBadge();
+    goToStep(0);
+    // Re-run engine if we have results
+    if (c.topDiagnosis && Object.keys(formData).length > 0) {
+      setTimeout(() => {
+        try {
+          const ranked = runDiagnosisEngine(formData);
+          const warnings = checkContradictions(formData);
+          renderResults(ranked, warnings);
+          // Restore doctor notes after render
+          setTimeout(() => {
+            if (document.getElementById('doctor_comments')) document.getElementById('doctor_comments').value = c.doctorNotes||'';
+            if (document.getElementById('followup_date')) document.getElementById('followup_date').value = c.followupDate||'';
+          }, 100);
+          goToStep(4);
+        } catch(e) {}
+      }, 200);
+    }
+  });
 }
 
 function deleteCaseById(id) {
   let cases = JSON.parse(localStorage.getItem('joyvet_cases') || '[]');
   cases = cases.filter(c => c.id !== id);
   localStorage.setItem('joyvet_cases', JSON.stringify(cases));
+  cloudDeleteCase(id);
   loadRecentCases();
 }
 
 function clearHistory() {
-  showConfirm('Clear Case History', 'Delete all saved cases? This cannot be undone.', () => {
+  showConfirm('Clear Case History', 'Delete ALL saved cases? This cannot be undone.', () => {
     localStorage.removeItem('joyvet_cases');
     loadRecentCases();
   });
+}
+
+function exportAllCases() {
+  const cases = JSON.parse(localStorage.getItem('joyvet_cases') || '[]');
+  const blob = new Blob([JSON.stringify(cases, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `joyvet-cases-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importCases(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const imported = JSON.parse(e.target.result);
+      if (!Array.isArray(imported)) throw new Error('Invalid format');
+      let cases = JSON.parse(localStorage.getItem('joyvet_cases') || '[]');
+      imported.forEach(ic => { if (!cases.find(c => c.id === ic.id)) cases.push(ic); });
+      localStorage.setItem('joyvet_cases', JSON.stringify(cases));
+      loadRecentCases();
+      alert(`Imported ${imported.length} cases.`);
+    } catch(ex) { alert('Import failed: invalid file format.'); }
+  };
+  reader.readAsText(file);
+  input.value = '';
 }
 
 // ── AUTOSAVE ──────────────────────────────────────────────────────────────
@@ -2921,32 +3456,130 @@ function startAutosave() {
 
 function autosaveCurrentCase() {
   try {
+    const doctorNotes = document.getElementById('doctor_comments')?.value || '';
+    const followupDate = document.getElementById('followup_date')?.value || '';
     localStorage.setItem('joyvet_autosave', JSON.stringify({
       formData,
       step: currentStep,
       patientName: document.getElementById('f_patient_name').value,
+      ownerName: document.getElementById('f_owner_name')?.value || '',
+      doctorNotes, followupDate,
       ts: Date.now()
     }));
   } catch(e) {}
+}
+
+// ── FOLLOW-UP REMINDERS ────────────────────────────────────────────────────
+function scheduleFollowUpReminder(caseObj) {
+  if (!caseObj.followupDate) return;
+  let reminders = JSON.parse(localStorage.getItem('joyvet_reminders') || '[]');
+  reminders = reminders.filter(r => r.caseId !== caseObj.id);
+  reminders.push({ caseId: caseObj.id, date: caseObj.followupDate, patientName: caseObj.patientName });
+  localStorage.setItem('joyvet_reminders', JSON.stringify(reminders));
+}
+
+function checkFollowUpReminders() {
+  const today = new Date().toISOString().slice(0, 10);
+  const reminders = JSON.parse(localStorage.getItem('joyvet_reminders') || '[]');
+  const due = reminders.filter(r => r.date && r.date <= today);
+  const container = document.getElementById('reminder-banner-container');
+  if (!container) return;
+  container.innerHTML = '';
+  due.forEach(r => {
+    const banner = document.createElement('div');
+    banner.className = 'reminder-banner';
+    banner.innerHTML = `<span style="font-size:1.3rem;">📅</span>
+      <div><strong>Follow-Up ${r.date < today ? 'OVERDUE' : 'Due Today'}:</strong> ${r.patientName} — scheduled ${r.date}
+      <button class="btn-quick-normal" onclick="dismissReminder(${r.caseId})" style="margin-left:10px;font-size:0.75rem;">Dismiss</button>
+      <button class="btn-quick-normal" onclick="viewCaseDetail(${r.caseId})" style="margin-left:4px;font-size:0.75rem;">View Case</button></div>`;
+    container.appendChild(banner);
+  });
+}
+
+function dismissReminder(caseId) {
+  let reminders = JSON.parse(localStorage.getItem('joyvet_reminders') || '[]');
+  reminders = reminders.filter(r => r.caseId !== caseId);
+  localStorage.setItem('joyvet_reminders', JSON.stringify(reminders));
+  checkFollowUpReminders();
+}
+
+// ── FIREBASE CLOUD SYNC ────────────────────────────────────────────────────
+// ── JoyVet Cloud Sync — PythonAnywhere backend ──────────────────────────────
+const PA_SYNC_URL = 'https://joyvetcare.pythonanywhere.com/api/v1/cds/cases/';
+const CLINIC_KEY  = '6d51fab9-2bd6-49c6-b2ab-1eba585e5cc3';
+
+function updateCloudBadge(state) {
+  const badge = document.getElementById('cloud-status-badge');
+  if (!badge) return;
+  badge.className = 'cloud-badge ' + state;
+  badge.textContent = state === 'online' ? '● Online' : state === 'syncing' ? '⟳ Syncing' : '● Offline';
+}
+
+function showCloudLogin() {
+  const el = document.getElementById('cloud-sync-status');
+  if (el) el.textContent = 'Ready to sync with JoyVet clinic server.';
+  document.getElementById('cloud-login-overlay').classList.add('show');
+}
+
+async function cloudSaveCase(caseObj) {
+  try {
+    updateCloudBadge('syncing');
+    const clean = JSON.parse(JSON.stringify(caseObj));
+    const resp = await fetch(`${PA_SYNC_URL}?key=${CLINIC_KEY}`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(clean),
+    });
+    updateCloudBadge(resp.ok ? 'online' : 'offline');
+  } catch(e) { updateCloudBadge('offline'); }
+}
+
+async function cloudDeleteCase(id) {
+  try {
+    await fetch(`${PA_SYNC_URL}${id}/?key=${CLINIC_KEY}`, {method: 'DELETE'});
+  } catch(e) {}
+}
+
+async function syncCasesFromCloud() {
+  try {
+    updateCloudBadge('syncing');
+    const resp = await fetch(`${PA_SYNC_URL}?key=${CLINIC_KEY}`);
+    if (!resp.ok) { updateCloudBadge('offline'); return; }
+    const {cases: cloudCases} = await resp.json();
+    let localCases = JSON.parse(localStorage.getItem('joyvet_cases') || '[]');
+    const localIds = new Set(localCases.map(c => String(c.id)));
+    const cloudIds = new Set(cloudCases.map(c => String(c.id)));
+    // Merge: add cloud-only cases locally
+    cloudCases.forEach(cc => { if (!localIds.has(String(cc.id))) localCases.push(cc); });
+    localCases.sort((a,b) => (b.savedAt||'').localeCompare(a.savedAt||''));
+    localStorage.setItem('joyvet_cases', JSON.stringify(localCases));
+    // Push local-only cases to cloud
+    localCases.forEach(lc => { if (!cloudIds.has(String(lc.id))) cloudSaveCase(lc); });
+    updateCloudBadge('online');
+    loadRecentCases();
+  } catch(e) { updateCloudBadge('offline'); }
 }
 
 function loadAutosave() {
   try {
     const saved = JSON.parse(localStorage.getItem('joyvet_autosave') || 'null');
     if (saved && saved.patientName && (Date.now() - saved.ts < 3600000)) {
-      // Offer to resume
       const resume = confirm(`Resume previous case for "${saved.patientName}"?`);
       if (resume) {
         formData = saved.formData || {};
         document.getElementById('f_patient_name').value = saved.patientName || '';
+        if (document.getElementById('f_owner_name')) document.getElementById('f_owner_name').value = saved.ownerName || '';
         updatePatientBadge();
         goToStep(saved.step || 0);
-        // Re-run engine and rebuild results panel if we were on the results step
         if ((saved.step === 4) && Object.keys(formData).length > 0) {
           try {
             const ranked = runDiagnosisEngine(formData);
             const warnings = checkContradictions(formData);
             renderResults(ranked, warnings);
+            setTimeout(() => {
+              if (document.getElementById('doctor_comments')) document.getElementById('doctor_comments').value = saved.doctorNotes || '';
+              if (document.getElementById('followup_date')) document.getElementById('followup_date').value = saved.followupDate || '';
+            }, 100);
           } catch(e) {}
         }
       }

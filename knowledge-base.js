@@ -23,6 +23,7 @@ const JOYVET_KB = {
         env_indoor_outdoor: 4, env_contact_other_pets: 2,
         skin_pruritus: 10, skin_erythema: 7, skin_alopecia_focal: 6, skin_papules: 5,
         skin_lichenification: 7, skin_hyperpigmentation: 5,
+        skin_ventral: 6, skin_pedal: 7, skin_facial: 6, skin_self_trauma: 6,
         ears_erythema: 6, ears_pruritus: 5,
         age_young: 4
       },
@@ -60,6 +61,7 @@ const JOYVET_KB = {
         complaints_skin_lesions: 8, complaints_hair_loss: 6,
         skin_pruritus: 10, skin_erythema: 7, skin_papules: 6, skin_crusts: 7,
         skin_alopecia_focal: 7, skin_alopecia_diffuse: 5,
+        skin_dorsal: 7, skin_ventral: 5, skin_self_trauma: 6,
         parasites_fleas: 9,
         env_outdoor: 5, env_contact_stray: 6,
         hpi_onset_sudden: 5, hpi_progression_worsening: 5
@@ -96,6 +98,7 @@ const JOYVET_KB = {
         complaints_skin_lesions: 8, complaints_hair_loss: 9,
         skin_alopecia_focal: 9, skin_alopecia_diffuse: 7, skin_erythema: 6,
         skin_papules: 5, skin_pustules: 6, skin_crusts: 6,
+        skin_facial: 7, skin_pedal: 6, skin_follicular_casts: 5,
         age_young: 7, hpi_onset_subacute: 5,
         chronic_condition_none: 3
       },
@@ -275,7 +278,8 @@ const JOYVET_KB = {
         complaints_hair_loss: 8, complaints_skin_lesions: 6, complaints_polydipsia: 9, complaints_polyuria: 8,
         complaints_weight_gain: 6, complaints_behavioral: 4,
         skin_alopecia_diffuse: 9, skin_hyperpigmentation: 7, skin_thickened: 6,
-        skin_dry: 5, skin_poor_coat: 7,
+        skin_dry: 5, skin_poor_coat: 7, skin_bilateral_symmetric: 8,
+        skin_pad_hyperkeratosis: 5, skin_comedone: 6, skin_dorsal: 6,
         abdomen_distension: 7,
         age_middle: 5, age_old: 6,
         breed_poodle: 5, breed_dachshund: 5, breed_boxer: 4
@@ -416,7 +420,7 @@ const JOYVET_KB = {
           "IRIS Stage 1–2: Monitor; address proteinuria (Benazepril 0.25–0.5 mg/kg PO SID)",
           "IRIS Stage 2–3: Phosphate binders (Aluminum hydroxide 30–90 mg/kg/day with food)",
           "Calcitriol 2.5–3.5 ng/kg PO SID (if iPTH elevated)",
-          "Erythropoietin/Darbepoetin if PCV <20% (cats) or <25% (dogs)",
+          "Erythropoietin/Darbepoetin: use if PCV <20% in cats or <25% in dogs — requires consultation",
           "Amlodipine 0.625–1.25 mg/cat PO SID (hypertension — systolic >160)",
           "Maropitant 1 mg/kg PO/SC SID prn (nausea)"
         ],
@@ -10028,6 +10032,381 @@ const JOYVET_KB = {
         red_flags: ["Non-responsive to famciclovir (consider alternative diagnosis: EGC, neopl, demodicosis)","Corneal ulceration progressing","Secondary bacterial sepsis (rare)"],
         followup: "Virus establishes latency in trigeminal ganglion — lifelong; stress reactivation common; prophylactic famciclovir during stressors; vaccination reduces severity not infection; indoor housing reduces exposure",
         prognosis: "fair — recurrences expected lifelong"
+      }
+    },
+
+    // ═══════════════════ EXPANDED DERMATOLOGY — MSD VET MANUAL / MULLER & KIRK ════════════
+
+    {
+      id: "pemphigus_foliaceus",
+      name: "Pemphigus Foliaceus",
+      species: ["dog","cat"],
+      category: "Dermatology / Immunology",
+      signals: {
+        complaints_skin_lesions: 9, complaints_hair_loss: 6,
+        skin_pustules: 9, skin_crusts: 9, skin_erythema: 6,
+        skin_alopecia_focal: 5, skin_bilateral_symmetric: 7,
+        skin_facial: 8, skin_pedal: 7, skin_pad_hyperkeratosis: 6,
+        skin_depigmentation: 5,
+        hpi_onset_subacute: 5, hpi_progression_worsening: 6,
+        age_middle: 5, age_old: 4
+      },
+      contra_signals: { parasites_fleas: -4, parasites_mites: -3 },
+      tests: {
+        tier1: ["Skin cytology — look for acantholytic (rounded, non-cornified) keratinocytes among neutrophils","Impression smear from intact pustule","CBC/Chemistry/UA baseline"],
+        tier2: ["Skin biopsy (submit multiple intact pustules + margin tissue) — subcorneal pustule with acantholytic keratinocytes confirms diagnosis","ANA titer (rule out pemphigus erythematosus/SLE)","Drug history review (drug-induced pemphigus: trimethoprim-sulfa, cephalosporins)"],
+        tier3: ["Direct immunofluorescence or immunohistochemistry (intercellular IgG deposits)","Referral to veterinary dermatologist","Anti-desmoglein-1 ELISA (research labs)"]
+      },
+      treatment: {
+        medications: [
+          "Prednisolone 2–4 mg/kg PO SID — induction (high dose until remission, then taper over weeks to months)",
+          "Azathioprine 2 mg/kg PO SID — steroid-sparing; 3–6 weeks onset; monitor CBC monthly (dogs)",
+          "Chlorambucil 0.1–0.2 mg/kg PO SID or EOD — preferred steroid-sparing (less myelotoxic; monitor CBC) (cats)",
+          "Mycophenolate mofetil 10–20 mg/kg PO BID (alternative steroid-sparing agent)",
+          "Doxycycline 5–10 mg/kg PO SID + Niacinamide 500 mg PO TID (mild cases — adjunct immunomodulation)",
+          "Topical tacrolimus 0.1% ointment (localized lesions only)"
+        ],
+        procedures: ["Gentle cleansing of crusts (warm compresses)","Avoid sun exposure (worsens lesions)","Elizabethan collar if self-traumatizing"],
+        diet: ["High-quality protein diet to offset catabolic effect of steroids"]
+      },
+      education: {
+        monitor: ["Pustule development (disease activity)","CBC monthly (azathioprine/chlorambucil — watch for myelosuppression)","Chemistry panel (hepatopathy from steroids)","Body weight (steroid side effects)","Polydipsia/polyphagia (steroid)"],
+        red_flags: ["Systemic illness/fever (secondary sepsis)","Rapid generalization","Pallor/anemia (myelosuppression from immunosuppressives)","Not responding after 4–6 weeks of treatment"],
+        followup: "Recheck at 2–4 weeks; CBC/chem monthly during induction; lifelong management usually required; taper to lowest effective dose",
+        prognosis: "fair — lifelong treatment typical; some achieve remission"
+      }
+    },
+
+    {
+      id: "food_allergy_dermatitis",
+      name: "Cutaneous Adverse Food Reaction (Food Allergy)",
+      species: ["dog","cat"],
+      category: "Dermatology / Allergy",
+      signals: {
+        complaints_skin_lesions: 8, complaints_hair_loss: 5,
+        skin_pruritus: 10, skin_erythema: 7, skin_papules: 7,
+        skin_self_trauma: 7,
+        skin_facial: 7, skin_pedal: 8, skin_ventral: 6,
+        ears_erythema: 6, ears_pruritus: 6,
+        hpi_onset_chronic: 7, hpi_progression_fluctuating: 5,
+        chronic_condition_allergies: 5, age_young: 5
+      },
+      contra_signals: { parasites_fleas: -2, hpi_seasonal: -4 },
+      tests: {
+        tier1: ["Flea combing (rule out FAD first)","Skin cytology (secondary Malassezia/bacterial infection common)","Otoscopy"],
+        tier2: ["Strict dietary elimination trial — hydrolyzed or single novel protein + novel carbohydrate × 8–12 weeks (gold standard)","Re-challenge with original diet (confirms food allergy by flare within 7–14d)","Intradermal + serum allergy test (cannot diagnose food allergy — unreliable)"],
+        tier3: ["Referral to veterinary dermatologist","Biopsy (non-specific — perivascular dermatitis)"]
+      },
+      treatment: {
+        medications: [
+          "Oclacitinib (Apoquel) 0.4–0.6 mg/kg PO BID (manage pruritus during diet trial)",
+          "Prednisolone 0.5–1 mg/kg PO SID (short-term rescue for severe pruritus — avoid during elimination trial interpretation)",
+          "Cephalexin 22 mg/kg PO BID × 3–4 weeks (secondary bacterial pyoderma)",
+          "Ketoconazole 5–10 mg/kg PO SID (secondary Malassezia)",
+          "Omega-3 fatty acids EPA/DHA 30–40 mg/kg/day (adjunct anti-inflammatory)"
+        ],
+        procedures: ["Medicated shampoo (chlorhexidine 2–4%) q3–7d","Strict diet trial — NO treats, flavored medications, table scraps for 8–12 weeks","Introduce hydrolyzed or novel protein diet exclusively"],
+        diet: ["Hydrolyzed protein diet (Royal Canin HP, Hill's z/d, Purina HA) OR","Novel protein/carbohydrate (e.g. kangaroo+lentil, venison+potato — choose protein patient has never eaten)","STRICT — no treats, no flavored medications, no shared bowls during trial","8–12 weeks minimum for definitive response assessment"]
+      },
+      education: {
+        monitor: ["Pruritus score weekly during trial","Secondary infection signs","Strict dietary compliance (educate owner critically)"],
+        red_flags: ["Not responding after 12-week strict trial (consider atopy or misdiagnosis)","Secondary deep pyoderma","Gastrointestinal signs concurrently (GI food allergy)"],
+        followup: "Recheck at 6 weeks during trial; if improved, re-challenge with old diet to confirm; then permanently switch to hypoallergenic diet",
+        prognosis: "good — if offending food identified and avoided"
+      }
+    },
+
+    {
+      id: "contact_dermatitis",
+      name: "Contact Dermatitis / Contact Hypersensitivity",
+      species: ["dog","cat"],
+      category: "Dermatology / Allergy",
+      signals: {
+        complaints_skin_lesions: 7,
+        skin_erythema: 8, skin_papules: 7, skin_vesicles: 6, skin_pruritus: 7,
+        skin_ventral: 9, skin_pedal: 7, skin_facial: 5,
+        hpi_onset_sudden: 7, hpi_progression_worsening: 6,
+        env_contact_other_pets: 3
+      },
+      tests: {
+        tier1: ["Clinical history — new products, surfaces, plants in environment","Remove suspected contact allergen and observe response (elimination diagnosis)","Skin cytology"],
+        tier2: ["Patch testing (closed patch for 48h)","Re-exposure challenge (under veterinary supervision)","Skin biopsy (spongiotic/vesicular dermatitis)"],
+        tier3: ["Referral to veterinary dermatologist"]
+      },
+      treatment: {
+        medications: [
+          "Prednisolone 0.5–1 mg/kg PO SID × 5–7d (acute relief)",
+          "Topical hydrocortisone 1% cream or spray (mild/localized)",
+          "Antihistamines: Cetirizine 5–10 mg/dog PO SID (mild adjunct only — limited efficacy in dogs)",
+          "Cephalexin 22 mg/kg PO BID (secondary bacterial infection)"
+        ],
+        procedures: ["Identify and REMOVE contact allergen (critical)","Wash affected areas with mild shampoo","Avoid re-exposure"],
+        diet: []
+      },
+      education: {
+        monitor: ["Resolution within 5–10d of removing allergen","Secondary infection","New exposures"],
+        red_flags: ["Not resolving after allergen removal","Spreading to non-contact areas (systemic allergy component)","Anaphylaxis signs"],
+        followup: "Recheck in 1–2 weeks; identify allergen source (new cleaning products, topical medications, bedding material, rubber/plastic food bowls, garden plants)",
+        prognosis: "good — if allergen permanently avoided"
+      }
+    },
+
+    {
+      id: "sebaceous_adenitis",
+      name: "Sebaceous Adenitis (SA)",
+      species: ["dog"],
+      category: "Dermatology",
+      signals: {
+        complaints_skin_lesions: 8, complaints_hair_loss: 9,
+        skin_dry: 8, skin_alopecia_focal: 6, skin_alopecia_diffuse: 7,
+        skin_follicular_casts: 9, skin_poor_coat: 8, skin_dorsal: 8,
+        skin_bilateral_symmetric: 7, skin_crusts: 5,
+        hpi_onset_chronic: 7, hpi_progression_worsening: 5,
+        breed_poodle: 9, age_middle: 5
+      },
+      tests: {
+        tier1: ["Skin biopsy (definitive — granulomatous or nodular inflammation at sebaceous glands; eventually gland replacement by fibrosis)","Skin cytology — rule out secondary infection","Wood's lamp — rule out dermatophytosis"],
+        tier2: ["Trichogram (follicular cast formation)","DTM culture (rule out ringworm)","CBC/chemistry baseline"],
+        tier3: ["Dermatologist referral","Breed-specific genetic testing (SA is an autosomal recessive trait in Poodles)"]
+      },
+      treatment: {
+        medications: [
+          "Cyclosporine 5 mg/kg PO SID × 3–6 months (best evidence; reduces granulomatous inflammation)",
+          "Tetracycline 250 mg PO TID + Niacinamide 250 mg PO TID (dogs <10 kg) or 500 mg TID (dogs >10 kg) — anti-inflammatory",
+          "Topical: Propylene glycol 50–75% spray (emollient — restore barrier)",
+          "Omega-3 fatty acids EPA/DHA (anti-inflammatory, improves coat)",
+          "Retinoids: Isotretinoin 1–3 mg/kg PO SID (seborrhea-predominant cases; not for breeding animals)"
+        ],
+        procedures: ["Baby oil soak 30–60 min weekly (softens follicular casts)","Medicated antifungal/antibacterial shampoo q3–7d (control secondary infection)","Warm-water bathing q1–2 weeks","Clipping in severe cases"],
+        diet: ["High-quality protein diet","Omega-3 supplementation (fish oil, evening primrose oil)"]
+      },
+      education: {
+        monitor: ["Follicular casts reduction (response to treatment)","Coat regrowth","Secondary infections","Cyclosporine side effects (GI, gingival hyperplasia, papillomavirus)"],
+        red_flags: ["Rapid alopecia progression","Deep pyoderma development","Not responding to cyclosporine × 3 months"],
+        followup: "Recheck at 6 weeks; response to cyclosporine seen at 6–12 weeks; lifelong management typical; Poodles should be tested before breeding",
+        prognosis: "fair — managed not cured; severe cases may not regrow coat"
+      }
+    },
+
+    {
+      id: "zinc_responsive_dermatosis",
+      name: "Zinc-Responsive Dermatosis",
+      species: ["dog"],
+      category: "Dermatology / Nutritional",
+      signals: {
+        complaints_skin_lesions: 8,
+        skin_crusts: 9, skin_erythema: 6, skin_alopecia_focal: 5,
+        skin_facial: 8, skin_pad_hyperkeratosis: 7, skin_pad_nasodigital: 7,
+        skin_pedal: 6, skin_pinnal: 6,
+        hpi_onset_chronic: 6, hpi_progression_worsening: 5,
+        breed_husky: 9, age_young: 5, age_middle: 4,
+        diet_pellet_only: 5
+      },
+      tests: {
+        tier1: ["Skin cytology (rule out secondary infection)","Response to zinc supplementation (diagnostic — improvement within 2–4 weeks)","Review diet (high phytate/calcium diet — cereal-based, home-cooked?)"],
+        tier2: ["Skin biopsy (parakeratotic hyperkeratosis with intracorneal and perivascular infiltrate)","Serum zinc level (often low-normal range — unreliable)","CBC/chemistry baseline"],
+        tier3: ["Referral if refractory","Rule out concurrent hypothyroidism"]
+      },
+      treatment: {
+        medications: [
+          "Zinc sulfate 10 mg/kg PO SID with food (Type I — Huskies/Malamutes; lifelong supplementation)",
+          "Zinc methionine 2 mg/kg PO SID (better absorbed; fewer GI side effects)",
+          "Zinc gluconate (alternative form)",
+          "Cephalexin 22 mg/kg PO BID (secondary bacterial infection)",
+          "Mupirocin or chlorhexidine topical (localized secondary infection)"
+        ],
+        procedures: ["Warm water soaking of crusted areas","Gentle debridement of hyperkeratotic pads","Correct underlying diet if calcium/phytate excess"],
+        diet: ["HIGH-quality commercial diet (reduces phytate competition for zinc absorption)","Avoid excess dietary calcium or cereal-based diets","Zinc supplementation LIFELONG for Type I (genetic malabsorption in Nordic breeds)"]
+      },
+      education: {
+        monitor: ["Crust resolution (expect 2–4 weeks)","Zinc toxicity signs (vomiting, lethargy, hemolytic anemia — avoid oversupplementation)","Secondary bacterial/fungal infection"],
+        red_flags: ["Severe ulceration of pads (affects mobility)","Hemolytic anemia (zinc toxicity — zinc in pennies/hardware)","No response after 4 weeks supplementation (reconsider diagnosis)"],
+        followup: "Type I (Arctic breeds) — lifelong zinc supplementation; recheck at 4 weeks initially; Type II (puppy rapid-growth) — often self-limiting with diet correction",
+        prognosis: "good — with appropriate supplementation and diet"
+      }
+    },
+
+    {
+      id: "feline_egc",
+      name: "Feline Eosinophilic Granuloma Complex (EGC)",
+      species: ["cat"],
+      category: "Dermatology / Allergy",
+      signals: {
+        complaints_skin_lesions: 9, complaints_pruritus: 7,
+        skin_erythema: 8, skin_plaque: 8, skin_ulcer: 7,
+        skin_ventral: 7, skin_facial: 7, skin_pedal: 5,
+        hpi_onset_subacute: 6, hpi_progression_worsening: 5,
+        chronic_condition_allergies: 7, parasites_fleas: 6,
+        age_young: 4, age_middle: 5
+      },
+      tests: {
+        tier1: ["Skin cytology — eosinophils predominate in plaques; degenerate eosinophils, collagen flame figures in granulomas","Flea combing + flea control trial","Clinical pattern recognition (indolent ulcer — upper lip; eosinophilic plaque — ventral abdomen/medial thigh; linear granuloma — caudal thigh/oral cavity)"],
+        tier2: ["Skin biopsy (definitive — confirms eosinophilic infiltrate; distinguishes from mast cell, SCC)","Allergy workup (food elimination trial 8–12 weeks; intradermal test)","CBC (peripheral eosinophilia common with plaques)"],
+        tier3: ["Dermatologist referral","Immunophenotyping","Serum allergen-specific IgE"]
+      },
+      treatment: {
+        medications: [
+          "Prednisolone 1–2 mg/kg PO SID × 4–6 weeks (induction) then taper (first-line)",
+          "Methylprednisolone acetate 4–5 mg/kg IM once (for cats difficult to medicate PO)",
+          "Cyclosporine 5–7 mg/kg PO SID (steroid-sparing; good evidence in cats)",
+          "Chlorambucil 0.1–0.2 mg/kg PO EOD (refractory cases)",
+          "Masivet / Masitinib (investigational in cats)"
+        ],
+        procedures: ["Identify and treat underlying allergy (flea control — ALL cats in household + environment; food trial; environmental atopy)","Elizabethan collar (prevent self-trauma to plaques)","Treat secondary bacterial infection if present"],
+        diet: ["Hypoallergenic diet trial × 8–12 weeks (concurrent food allergy in ~15–20% EGC cases)"]
+      },
+      education: {
+        monitor: ["Lesion size/depth (2–4 weekly photos helpful)","Eosinophil count (CBC) if severe","Steroid side effects (polydipsia, DM risk in cats)","Flea control compliance"],
+        red_flags: ["Lesion fails to respond after 4 weeks steroids (consider neoplasia — mast cell tumor, SCC)","Systemic eosinophilia with hypereosinophilic syndrome signs (rare)","Diabetic ketoacidosis (steroid-induced DM in cats)"],
+        followup: "Recheck at 3–4 weeks; identify underlying allergy for long-term control; year-round flea prevention critical; cyclosporine 3–6 months for refractory disease",
+        prognosis: "good — if underlying allergy controlled; recurrent without allergen management"
+      }
+    },
+
+    {
+      id: "canine_hypothyroidism_skin",
+      name: "Hypothyroidism (Dermatological Presentation)",
+      species: ["dog"],
+      category: "Dermatology / Endocrinology",
+      signals: {
+        complaints_hair_loss: 9, complaints_skin_lesions: 7, complaints_weight_gain: 7,
+        complaints_lethargy: 7, complaints_behavioral: 5,
+        skin_alopecia_diffuse: 9, skin_bilateral_symmetric: 9, skin_dry: 7,
+        skin_oily: 5, skin_hyperpigmentation: 6, skin_thickened: 5,
+        skin_poor_coat: 8, skin_crusts: 4,
+        age_middle: 7, age_old: 5,
+        breed_golden: 6, breed_labrador: 6, breed_doberman: 7, breed_boxer: 5, breed_cocker: 5
+      },
+      contra_signals: { complaints_polydipsia: -3, complaints_polyuria: -3 },
+      tests: {
+        tier1: ["Total T4 (TT4) — screening (normal rules out hypothyroidism in most cases)","CBC (mild non-regenerative anemia — ~50% of cases)","Chemistry panel (hypercholesterolemia — ~80%; hypertriglyceridemia)","Urinalysis"],
+        tier2: ["Free T4 by equilibrium dialysis (fT4ed) — more specific than TT4","TSH (cTSH) — elevated >0.68 ng/mL + low T4 = highly specific for primary hypothyroidism","Thyroid antibodies (anti-Tg, anti-T3, anti-T4) — if lymphocytic thyroiditis suspected","Skin biopsy (vacuolated hair follicle cells, myxedema in dermis, orthokeratotic hyperkeratosis — supportive not diagnostic)"],
+        tier3: ["Thyroid scintigraphy","Thyroid ultrasound","T3/T4 supplementation trial (empirical — discouraged without diagnostics)"]
+      },
+      treatment: {
+        medications: [
+          "Levothyroxine (T4) 0.02 mg/kg PO BID (standard starting dose; increase to SID in some dogs after stabilization)",
+          "Monitor T4 level 4–6 hours post-pill at 4–8 weeks (target: 2–4 µg/dL post-pill)",
+          "Note: Coat regrowth and skin improvement may take 3–6 months after euthyroid state achieved"
+        ],
+        procedures: ["Medicated shampoo for secondary seborrhea","Treat secondary skin infections concurrently"],
+        diet: ["Weight management diet (hypothyroid dogs often obese)","Maintain consistent timing for levothyroxine administration"]
+      },
+      education: {
+        monitor: ["Body weight","Activity/demeanor (improves within weeks)","PU/PD (may reveal concurrent disease)","Coat regrowth (months)","T4 levels every 6 months once stable"],
+        red_flags: ["Myxedema coma (rare — hypothermia, stupor, bradycardia — emergency)","Signs of over-supplementation: tachycardia, polydipsia, hyperactivity","Concurrent cardiovascular disease (introduce levothyroxine gradually)"],
+        followup: "T4 level check at 4–8 weeks (mid-interval or 4–6h post-pill); adjust dose; recheck every 6 months; lifelong supplementation",
+        prognosis: "good — excellent response to appropriate levothyroxine therapy"
+      }
+    },
+
+    {
+      id: "alopecia_x",
+      name: "Alopecia X (PIPF / Plush Coat Syndrome / Growth Hormone-Responsive Alopecia)",
+      species: ["dog"],
+      category: "Dermatology / Endocrine",
+      signals: {
+        complaints_hair_loss: 9,
+        skin_alopecia_diffuse: 9, skin_bilateral_symmetric: 9,
+        skin_hyperpigmentation: 7, skin_poor_coat: 6,
+        skin_dorsal: 7,
+        age_young: 5, age_middle: 5,
+        breed_poodle: 7
+      },
+      contra_signals: { skin_pruritus: -4, complaints_polydipsia: -3, skin_thickened: -2 },
+      tests: {
+        tier1: ["CBC/Chemistry — normal (rule out metabolic disease)","Total T4 + TSH (rule out hypothyroidism)","Urine cortisol:creatinine ratio (rule out Cushing's)","Skin biopsy (flame follicles, trichilemmal cornification, follicular atrophy — consistent but not pathognomonic)"],
+        tier2: ["ACTH stimulation or LDDST (confirm no adrenal disease)","Sex hormone panel — LH, estradiol, progesterone, testosterone, 17-hydroxyprogesterone (may show imbalances)","Thyroid panel (fT4, cTSH)"],
+        tier3: ["GH stimulation test (rarely available)","Referral to endocrine/dermatology specialist"]
+      },
+      treatment: {
+        medications: [
+          "Neutering (first-line for intact dogs — ~50% regrow coat within 3 months)",
+          "Melatonin 3–6 mg PO BID–TID (safe, inexpensive; partial response in ~40%)","Trilostane 2–5 mg/kg PO SID (off-label; blocks adrenal sex hormone synthesis; good response reported)",
+          "Mitotane (o,p'-DDD) pulse therapy (historical; trilostane preferred)",
+          "Leuprolide acetate (GnRH analogue) — reported benefit in some cases"
+        ],
+        procedures: ["Cosmetic management","Sunscreen on depigmented/exposed skin"],
+        diet: []
+      },
+      education: {
+        monitor: ["Coat regrowth (if neutering/melatonin — 3–6 months)","Watch for other endocrine disease emerging later","Rule out Cushing's initially and annually"],
+        red_flags: ["Development of PU/PD (emerging Cushing's or DM)","Behavioral changes","Alopecia rapid worsening"],
+        followup: "Recheck at 3 months post-neutering; if no regrowth, try melatonin; condition is cosmetic only — no systemic illness; long-term monitoring for Cushing's emergence",
+        prognosis: "fair — cosmetic only; no health risk; variable response to treatment"
+      }
+    },
+
+    {
+      id: "cslo",
+      name: "Canine Symmetrical Lupoid Onychodystrophy (CSLO / SLO)",
+      species: ["dog"],
+      category: "Dermatology / Immunology",
+      signals: {
+        complaints_skin_lesions: 6,
+        skin_onychomadesis: 10, skin_nail_brittle: 8, skin_paronychia: 7,
+        skin_pedal: 9,
+        hpi_onset_subacute: 6, hpi_progression_worsening: 7,
+        age_middle: 6, age_young: 5,
+        breed_gordon_setter: 6, breed_labrador: 4
+      },
+      tests: {
+        tier1: ["Nail avulsion + histopathology (interface dermatitis at nail matrix — lichenoid infiltrate; key diagnostic finding)","Nail cytology/culture (rule out onychomycosis, bacterial paronychia)","CBC/chemistry baseline"],
+        tier2: ["ANA titer (rule out systemic lupus — negative in SLO)","Skin biopsy (adjacent skin usually normal — helps differentiate from pemphigus)","Food elimination trial (some cases linked to food allergy)"],
+        tier3: ["Dermatologist referral","Drug history (drug-induced onychodystrophy — trimethoprim-sulfa, tetracyclines)"]
+      },
+      treatment: {
+        medications: [
+          "Doxycycline 5–10 mg/kg PO SID + Niacinamide 500 mg PO TID (first-line immunomodulatory — 3–6 month trial)",
+          "Omega-3 fatty acids: EPA/DHA 50–100 mg/kg/day (strong adjunct evidence)",
+          "Vitamin E 400 IU/day PO (antioxidant — adjunct)",
+          "Prednisolone 0.5–1 mg/kg PO SID (acute severe pain flares — short course)",
+          "Pentoxifylline 400 mg PO TID (improves microvascular flow — adjunct)"
+        ],
+        procedures: ["Nail trimming under sedation (fragile nails — trim short to reduce trauma)","Protective boots (reduces discomfort on walks)","Warm water soaks q24–48h (softens nail bed, reduces pain)","Culture + treat any secondary infection"],
+        diet: ["Omega-3 supplementation emphasized","Food elimination trial if concurrent GI or skin allergy signs"]
+      },
+      education: {
+        monitor: ["Nail regrowth (3–6 months for significant improvement)","Pain level (behavioral cues — licking feet, lameness)","Number of nails affected (disease can spread to all nails)","Recurrence rate"],
+        red_flags: ["Severe lameness/inability to walk","Secondary fungal nail infection","No response after 6-month trial (reconsider diagnosis)"],
+        followup: "Recheck at 2–3 months; nail regrowth confirms diagnosis and treatment response; SLO is immune-mediated — long-term or lifelong management; avoid causative drugs if identified",
+        prognosis: "fair — managed not cured; painful in flares; quality of life usually maintained"
+      }
+    },
+
+    {
+      id: "sporotrichosis",
+      name: "Sporotrichosis (Sporothrix schenckii)",
+      species: ["dog","cat"],
+      category: "Dermatology / Infectious / Fungal",
+      signals: {
+        complaints_skin_lesions: 9,
+        skin_nodule: 9, skin_ulcer: 8, skin_crusts: 7,
+        skin_facial: 7, skin_pedal: 6,
+        env_outdoor: 7, env_contact_stray: 7,
+        hpi_onset_subacute: 7, hpi_progression_worsening: 8,
+        age_young: 4, age_middle: 4
+      },
+      tests: {
+        tier1: ["Cytology of exudate from draining tract — may identify yeast (cigar-shaped, 2–10 µm); cats shed many organisms (high infectivity)", "Fungal culture — gold standard (Sporothrix on Sabouraud medium; 1–3 week incubation — notify lab for safety protocols)","Skin biopsy — nodular to diffuse pyogranulomatous dermatitis"],
+        tier2: ["Immunohistochemistry","Molecular PCR","CBC/chemistry (systemic spread — cats higher risk)","Thoracic radiograph (dissemination)"],
+        tier3: ["Referral to internal medicine/infectious disease","Culture and sensitivity for antifungal susceptibility"]
+      },
+      treatment: {
+        medications: [
+          "Itraconazole 5–10 mg/kg PO SID with food × 3–6 months (drug of choice for both species)",
+          "Supersaturated potassium iodide (SSKI) 40 mg/kg PO TID — effective, inexpensive; CONTRAINDICATED in cats (dogs)",
+          "Terbinafine 30–40 mg/kg PO SID × 3–6 months — alternative; good tissue penetration (dogs)",
+          "Amphotericin B lipid complex 1 mg/kg IV q48h (severe systemic cases — nephrotoxic; specialist use only)"
+        ],
+        procedures: ["ZOONOTIC RISK — wear gloves when handling lesions, especially cats (Sporothrix in cat scratch/bite/exudate is highly infectious to humans)","Isolate affected cats from other animals and immunocompromised humans","Wound cleaning with antiseptic"],
+        diet: []
+      },
+      education: {
+        monitor: ["Lesion resolution (nodule → crust → heal over months)","Systemic signs (dissemination — rare in dogs, higher in cats)","Itraconazole hepatotoxicity (monitor chemistry at 4 weeks)","Treatment compliance — full course required"],
+        red_flags: ["Rapid systemic spread (cats — more serious)","Zoonotic transmission to human family members (report suspicious nodular lesions in owners)","Antifungal resistance (refractory cases)"],
+        followup: "Treat for minimum 1 month beyond clinical cure (total 3–6+ months); itraconazole monitoring at 4 weeks; PUBLIC HEALTH — notify local veterinary authority in endemic regions; cats — strict hygiene protocols until culture-negative",
+        prognosis: "good (dogs — cutaneous); guarded (cats — higher risk of dissemination)"
       }
     },
 
