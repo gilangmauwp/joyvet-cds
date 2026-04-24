@@ -1386,29 +1386,34 @@ body.client-print-mode .clinical-only-section { display: none !important; }
             <button onclick="copyAppsScript()" style="position:absolute;top:8px;right:8px;background:#334f84;color:white;border:none;border-radius:4px;padding:3px 10px;font-size:0.75rem;cursor:pointer;">📋 Copy</button>
             <pre id="apps-script-block" style="color:#e2e8f0;font-size:0.72rem;line-height:1.6;white-space:pre;overflow-x:auto;font-family:monospace;">function doPost(e) {
   try {
-    var data = JSON.parse(e.postData.contents);
-    saveCase(data);
+    var payload = JSON.parse(e.postData.contents);
+    var data = payload.data || payload;
+    var species = cap(data.species  || 'Unknown');
+    var client  = clean(data.ownerName   || 'Unknown Client');
+    var patient = clean(data.patientName || 'Unknown Patient');
+    var date    = data.visitDate || fmtDate();
+    var root    = getFolder('JoyVet CDS Records', DriveApp.getRootFolder());
+    var spF     = getFolder(species,  root);
+    var clF     = getFolder(client,   spF);
+    var ptF     = getFolder(patient,  clF);
+    if (payload.type === 'html' && payload.html) {
+      var fname = date + '_' + patient + '_record.html';
+      var ex = ptF.getFilesByName(fname);
+      if (ex.hasNext()) { ex.next().setContent(payload.html); }
+      else { ptF.createFile(fname, payload.html, MimeType.HTML); }
+    } else {
+      var fname2 = date + '_' + patient + '_record.json';
+      var ex2 = ptF.getFilesByName(fname2);
+      var content = JSON.stringify(data, null, 2);
+      if (ex2.hasNext()) { ex2.next().setContent(content); }
+      else { ptF.createFile(fname2, content, MimeType.PLAIN_TEXT); }
+    }
     return ContentService.createTextOutput('{"status":"ok"}')
       .setMimeType(ContentService.MimeType.JSON);
   } catch(err) {
     return ContentService.createTextOutput('{"status":"error","msg":"'+err.message+'"}')
       .setMimeType(ContentService.MimeType.JSON);
   }
-}
-function saveCase(data) {
-  var species  = cap(data.species  || 'Unknown');
-  var client   = clean(data.ownerName   || 'Unknown Client');
-  var patient  = clean(data.patientName || 'Unknown Patient');
-  var date     = data.visitDate || fmtDate();
-  var root     = getFolder('JoyVet CDS Records', DriveApp.getRootFolder());
-  var spFolder = getFolder(species,  root);
-  var clFolder = getFolder(client,   spFolder);
-  var ptFolder = getFolder(patient,  clFolder);
-  var fname    = date + '_' + patient + '_record.json';
-  var content  = JSON.stringify(data, null, 2);
-  var existing = ptFolder.getFilesByName(fname);
-  if (existing.hasNext()) { existing.next().setContent(content); }
-  else { ptFolder.createFile(fname, content, MimeType.PLAIN_TEXT); }
 }
 function getFolder(name, parent) {
   var f = parent.getFoldersByName(name);
@@ -3866,18 +3871,100 @@ function copyAppsScript() {
   });
 }
 
+function buildRecordHtml(c) {
+  const tx  = (c.resultsData && c.resultsData.treatment) || {};
+  const ed  = (c.resultsData && c.resultsData.education) || {};
+  const diagName = c.topDiagnosis || (c.resultsData && c.resultsData.name) || '—';
+  const sp  = (c.species || '').toLowerCase();
+  const meds = (tx.medications || []).filter(m => {
+    if (/\(dogs?\)\s*$/i.test(m)) return sp === 'dog';
+    if (/\(cats?\)\s*$/i.test(m)) return sp === 'cat';
+    if (/\(rabbits?\)\s*$/i.test(m)) return sp === 'rabbit';
+    return true;
+  });
+  const clinKw = /\b(IV\b|catheter|intubat|anaesth|anesthes|blood transfus|hospitali|ICU|surgical|biopsy|cytology|scraping|culture|transfus|adrenalect|caval|jugular|NG tube|endoscop)\b/i;
+  const ownerProcs = (tx.procedures || []).filter(p => !clinKw.test(p));
+  const homeItems = (ed.home_care && ed.home_care.length) ? ed.home_care : (ed.monitor || []);
+  const warnItems = (ed.when_to_return && ed.when_to_return.length) ? ed.when_to_return : (ed.red_flags || []);
+  const progMap = {good:'✅ Good — with appropriate treatment, full recovery is expected.',fair:'🟡 Fair — good improvement expected with consistent treatment and monitoring.',guarded:'🟠 Guarded — outcome depends on treatment response; close monitoring essential.',poor:'🔴 Serious — requires intensive management; discuss further with your veterinarian.'};
+  const progText = ed.prognosis ? (progMap[(ed.prognosis+'').toLowerCase()] || ed.prognosis) : '';
+  const examRows = (c.examFindings || []).map(f => `<tr><td class="lbl">${f.section}</td><td>${f.values.join('<br>')}</td></tr>`).join('');
+  const bullets = items => (items||[]).map(i=>`<div class="b">• ${i}</div>`).join('');
+  const warns   = items => (items||[]).map(i=>`<div class="w">⚠ ${i}</div>`).join('');
+
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
+<title>Medical Record — ${c.patientName||''} ${c.visitDate||''}</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Inter,Helvetica,Arial,sans-serif;color:#1e293b;background:#fff;padding:32px;font-size:13.5px;line-height:1.65;max-width:900px;margin:0 auto}
+.hdr{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #1e3a5f;padding-bottom:12px;margin-bottom:20px}
+.clinic{font-size:1.5rem;font-weight:800;color:#1e3a5f;letter-spacing:-0.02em}
+.clinic-sub{font-size:0.7rem;color:#64748b;text-transform:uppercase;letter-spacing:0.08em;margin-top:3px}
+.pinfo{text-align:right;font-size:0.82rem;color:#475569;line-height:1.8}
+h2{font-size:0.69rem;font-weight:700;text-transform:uppercase;letter-spacing:0.09em;color:#1e3a5f;border-bottom:2px solid #1e3a5f;padding-bottom:3px;margin:18px 0 9px}
+h2.red{color:#b91c1c;border-color:#b91c1c}
+table{border-collapse:collapse;width:100%;margin-bottom:4px}
+td{border:1px solid #cbd5e1;padding:5px 9px;vertical-align:top;font-size:13px}
+td.lbl{font-weight:600;background:#f1f5f9;width:26%;white-space:nowrap}
+.dx{background:#eef2fa;border-left:4px solid #334f84;padding:11px 15px;border-radius:0 6px 6px 0;margin-bottom:18px}
+.dx strong{font-size:1.05rem;font-weight:800;color:#1e3a5f}
+.b{padding:2px 0;font-size:13px;line-height:1.55}
+.b::before{content:"• ";color:#1e3a5f;font-weight:700}
+.med{background:#f0f5ff;border-left:3px solid #334f84;padding:5px 10px;border-radius:0 4px 4px 0;margin-bottom:4px;font-size:12.5px}
+.w{color:#b91c1c;padding:2px 0;font-size:13px;line-height:1.55}
+.wblk{background:#fff5f5;border:1px solid #fecaca;border-radius:6px;padding:13px;margin-bottom:4px}
+.vrow{display:flex;gap:20px;background:#f0f4ff;padding:7px 13px;border-radius:5px;margin-bottom:4px;font-size:13px}
+.vrow strong{color:#1e3a5f}
+.fu{background:#d1fae5;border-radius:6px;padding:9px 13px;color:#065f46;font-weight:700;font-size:13px;margin-top:9px}
+.nb{background:#fff8e1;border-left:3px solid #f59e0b;padding:9px 13px;border-radius:0 5px 5px 0;white-space:pre-wrap;font-size:13px}
+.notice{background:#fff8e1;border:1px solid #fbbf24;border-radius:5px;padding:8px 12px;font-size:0.78rem;color:#92400e;margin:18px 0}
+.ft{margin-top:30px;border-top:1px solid #e2e8f0;padding-top:9px;font-size:0.69rem;color:#94a3b8;display:flex;justify-content:space-between}
+.sb{margin-bottom:14px;page-break-inside:avoid}
+@media print{body{padding:0}@page{margin:1.5cm}}
+</style></head><body>
+<div class="hdr">
+  <div><div class="clinic">JOY VETERINARY CARE</div><div class="clinic-sub">Medical Record — Confidential</div></div>
+  <div class="pinfo"><div>Date: ${c.visitDate||'—'}${c.caseNo?' | Case #'+c.caseNo:''}</div><div>Generated: ${new Date().toLocaleDateString()}</div></div>
+</div>
+<div class="dx"><strong>Working Diagnosis: ${diagName}</strong></div>
+<h2>Patient &amp; Owner</h2>
+<table>
+  <tr><td class="lbl">Patient</td><td>${c.patientName||'—'}</td><td class="lbl">Owner</td><td>${c.ownerName||'—'}</td></tr>
+  <tr><td class="lbl">Species / Breed</td><td>${c.species||''} ${c.breed||''}</td><td class="lbl">Age / Sex</td><td>${c.age||'—'} · ${(c.sex||'').replace(/_/g,' ')}</td></tr>
+  <tr><td class="lbl">Body Weight</td><td>${c.weight?c.weight+' kg':'—'}</td><td class="lbl">Visit Date</td><td>${c.visitDate||'—'}</td></tr>
+  ${(c.complaints&&c.complaints.length)?`<tr><td class="lbl">Chief Complaints</td><td colspan="3">${c.complaints.join(' · ')}</td></tr>`:''}
+  ${c.histNotes?`<tr><td class="lbl">History Notes</td><td colspan="3" style="white-space:pre-wrap;">${c.histNotes}</td></tr>`:''}
+</table>
+${(c.temperature||c.heartRate||c.respRate)?`<h2>Vital Signs</h2><div class="vrow">${c.temperature?`<span>🌡 Temp: <strong>${c.temperature} °C</strong></span>`:''} ${c.heartRate?`<span>❤ HR: <strong>${c.heartRate} bpm</strong></span>`:''} ${c.respRate?`<span>🫁 RR: <strong>${c.respRate} br/min</strong></span>`:''}</div>`:''}
+${examRows?`<h2>Physical Examination</h2><table>${examRows}</table>`:''}
+${meds.length?`<h2>💊 Prescribed Medications</h2><div class="sb">${meds.map(m=>`<div class="med">• ${m}</div>`).join('')}</div>`:''}
+${(tx.supportive&&tx.supportive.length)?`<h2>🩹 Supportive Care</h2><div class="sb">${bullets(tx.supportive)}</div>`:''}
+${ownerProcs.length?`<h2>🏠 At-Home &amp; Environmental Care</h2><div class="sb">${bullets(ownerProcs)}</div>`:''}
+${(tx.diet&&tx.diet.length)?`<h2>🥗 Dietary Recommendations</h2><div class="sb">${bullets(tx.diet)}</div>`:''}
+${homeItems.length?`<h2>🏡 Home Care &amp; Monitoring</h2><div class="sb">${bullets(homeItems)}</div>`:''}
+${(ed.prevention&&ed.prevention.length)?`<h2>🛡 Prevention</h2><div class="sb">${bullets(ed.prevention)}</div>`:''}
+${warnItems.length?`<h2 class="red">⚠ Return to Clinic Immediately If</h2><div class="wblk sb">${warns(warnItems)}</div>`:''}
+${c.doctorNotes?`<h2>📝 Doctor's Notes</h2><div class="nb sb">${c.doctorNotes}</div>`:''}
+${((tx.monitoring&&tx.monitoring.length)||ed.followup||c.followupDate)?`<h2>📅 Follow-Up &amp; Monitoring</h2><div class="sb">${bullets(tx.monitoring||[])}${ed.followup?`<div class="b" style="color:#334f84;font-style:italic;">📋 ${ed.followup}</div>`:''} ${c.followupDate?`<div class="fu">📅 Next Appointment: ${c.followupDate}</div>`:''}</div>`:''}
+${progText?`<h2>📊 Prognosis</h2><div class="sb"><p style="font-weight:600;color:#334f84;">${progText}</p></div>`:''}
+<div class="notice">⚕ This document was prepared by JoyVet Care veterinary staff. It is a clinical decision support output and does not replace professional veterinary judgment.</div>
+<div class="ft"><span>JOY VETERINARY CARE — CONFIDENTIAL</span><span>Generated: ${new Date().toLocaleString()}</span></div>
+</body></html>`;
+}
+
 async function saveToDrive(caseObj) {
   const url = localStorage.getItem('joyvet_drive_url');
   if (!url) return;
   const badge = document.getElementById('drive-status-badge');
   try {
     if (badge) { badge.textContent = '📁 Saving…'; badge.style.display = 'inline'; }
-    // text/plain avoids CORS preflight — Apps Script reads e.postData.contents
+    const html = buildRecordHtml(caseObj);
     await fetch(url, {
       method:  'POST',
       mode:    'no-cors',
       headers: {'Content-Type': 'text/plain'},
-      body:    JSON.stringify(caseObj),
+      body:    JSON.stringify({type: 'html', data: caseObj, html}),
     });
     if (badge) { badge.textContent = '📁 Drive ✓'; badge.style.background = '#e8f5e9'; badge.style.color = '#2e7d32'; }
   } catch(e) {
