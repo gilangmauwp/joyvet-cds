@@ -3316,59 +3316,92 @@ function printForClient() {
 
   <div class="notice">⚕ This document is a care guide prepared by your veterinarian. Please follow all instructions carefully and contact the clinic with any questions or concerns.</div>
 
-  ${tx.goals && tx.goals.length ? `
-  <div class="section-block">
-    <h2>Treatment Goals</h2>
-    ${tx.goals.map(g=>`<div class="bullet"><span class="bullet-dot">•</span><span>${g}</span></div>`).join('')}
-  </div>` : ''}
-
   ${meds.length ? `
   <div class="section-block">
-    <h2>Prescribed Medications</h2>
-    ${meds.map(m=>`<div class="med-item">💊 ${m}</div>`).join('')}
+    <h2>💊 Prescribed Medications</h2>
+    ${meds.map(m=>`<div class="med-item">• ${m}</div>`).join('')}
   </div>` : ''}
 
   ${tx.supportive && tx.supportive.length ? `
   <div class="section-block">
-    <h2>Supportive Care</h2>
+    <h2>🩹 Supportive Care</h2>
     ${tx.supportive.map(s=>`<div class="bullet"><span class="bullet-dot">•</span><span>${s}</span></div>`).join('')}
+  </div>` : ''}
+
+  ${(() => {
+    // Owner-relevant procedures (filter out purely clinical steps)
+    const clinicalKeywords = /\b(IV|catheter|intubat|anaesth|anesthes|blood transfus|hospitali|ICU|surgical|biopsy|cytology|scraping|culture|transfus|adrenalect|caval|jugular|NG tube|endoscop|bronchoscop|echocardiogr|radiograph|ultrasound|X-ray)\b/i;
+    const ownerProcs = (tx.procedures || []).filter(p => !clinicalKeywords.test(p));
+    return ownerProcs.length ? `
+  <div class="section-block">
+    <h2>🏠 At-Home & Environmental Care</h2>
+    ${ownerProcs.map(p=>`<div class="bullet"><span class="bullet-dot">•</span><span>${p}</span></div>`).join('')}
+  </div>` : '';
+  })()}
+
+  ${tx.diet && tx.diet.length ? `
+  <div class="section-block">
+    <h2>🥗 Dietary Recommendations</h2>
+    ${tx.diet.map(d=>`<div class="bullet"><span class="bullet-dot">•</span><span>${d}</span></div>`).join('')}
   </div>` : ''}
 
   ${ed.explanation ? `
   <div class="section-block">
-    <h2>About This Condition</h2>
+    <h2>ℹ About This Condition</h2>
     <p style="font-size:13px;line-height:1.6;">${ed.explanation}</p>
   </div>` : ''}
 
-  ${ed.home_care && ed.home_care.length ? `
+  ${(() => {
+    // Home care: new format (home_care) or old format (monitor)
+    const items = (ed.home_care && ed.home_care.length) ? ed.home_care
+                : (ed.monitor  && ed.monitor.length)    ? ed.monitor : [];
+    return items.length ? `
   <div class="section-block">
-    <h2>Home Care Instructions</h2>
-    ${ed.home_care.map(h=>`<div class="bullet"><span class="bullet-dot">•</span><span>${h}</span></div>`).join('')}
-  </div>` : ''}
+    <h2>🏡 Home Care & Monitoring</h2>
+    ${items.map(h=>`<div class="bullet"><span class="bullet-dot">•</span><span>${h}</span></div>`).join('')}
+  </div>` : '';
+  })()}
 
-  ${ed.when_to_return && ed.when_to_return.length ? `
+  ${tx.goals && tx.goals.length ? `
   <div class="section-block">
-    <h2>Return to Clinic Immediately If</h2>
-    ${ed.when_to_return.map(r=>`<div class="warn-item"><span class="warn-dot">⚠</span><span>${r}</span></div>`).join('')}
+    <h2>🎯 Treatment Goals</h2>
+    ${tx.goals.map(g=>`<div class="bullet"><span class="bullet-dot">•</span><span>${g}</span></div>`).join('')}
   </div>` : ''}
 
   ${ed.prevention && ed.prevention.length ? `
   <div class="section-block">
-    <h2>Prevention</h2>
+    <h2>🛡 Prevention</h2>
     ${ed.prevention.map(p=>`<div class="bullet"><span class="bullet-dot">•</span><span>${p}</span></div>`).join('')}
   </div>` : ''}
 
-  ${tx.monitoring && tx.monitoring.length ? `
+  ${(() => {
+    // Warning signs: new format (when_to_return) or old format (red_flags)
+    const items = (ed.when_to_return && ed.when_to_return.length) ? ed.when_to_return
+                : (ed.red_flags      && ed.red_flags.length)      ? ed.red_flags : [];
+    return items.length ? `
+  <div class="section-block" style="background:#fff5f5;border:1px solid #fecaca;border-radius:6px;padding:14px;">
+    <h2 style="color:#b91c1c;border-color:#b91c1c;">⚠ Return to Clinic Immediately If</h2>
+    ${items.map(r=>`<div class="warn-item"><span class="warn-dot">⚠</span><span>${r}</span></div>`).join('')}
+  </div>` : '';
+  })()}
+
+  ${(() => {
+    const monItems = tx.monitoring && tx.monitoring.length ? tx.monitoring : [];
+    const fuNote   = ed.followup || '';
+    if (!monItems.length && !fuNote && !fuDate) return '';
+    return `
   <div class="section-block">
-    <h2>Monitoring & Follow-Up</h2>
-    ${tx.monitoring.map(m=>`<div class="bullet"><span class="bullet-dot">•</span><span>${m}</span></div>`).join('')}
-    ${fuDate ? `<div style="margin-top:10px;background:#d1fae5;border-radius:6px;padding:8px 12px;font-weight:600;color:#065f46;">📅 Scheduled Follow-Up: ${fuDate}</div>` : ''}
-  </div>` : fuDate ? `<div style="margin-top:10px;background:#d1fae5;border-radius:6px;padding:8px 12px;font-weight:600;color:#065f46;">📅 Scheduled Follow-Up: ${fuDate}</div>` : ''}
+    <h2>📅 Follow-Up & Monitoring Schedule</h2>
+    ${monItems.map(m=>`<div class="bullet"><span class="bullet-dot">•</span><span>${m}</span></div>`).join('')}
+    ${fuNote ? `<div style="margin-top:6px;font-size:13px;color:#334f84;font-style:italic;">📋 ${fuNote}</div>` : ''}
+    ${fuDate ? `<div style="margin-top:10px;background:#d1fae5;border-radius:6px;padding:10px 14px;font-weight:700;color:#065f46;font-size:13px;">📅 Your Next Appointment: ${fuDate}</div>` : ''}
+  </div>`;
+  })()}
 
   ${ed.prognosis ? `
   <div class="section-block">
-    <h2>Prognosis</h2>
-    <p style="font-size:13px;">${ed.prognosis}</p>
+    <h2>📊 Prognosis</h2>
+    <p style="font-size:13px;font-weight:600;color:#334f84;">${typeof ed.prognosis === 'string' && ['good','fair','guarded','poor'].includes(ed.prognosis.toLowerCase()) ? ({good:'✅ Good — with appropriate treatment, full recovery is expected.',fair:'🟡 Fair — good improvement expected with consistent treatment and monitoring.',guarded:'🟠 Guarded — outcome depends on treatment response; close monitoring essential.',poor:'🔴 Serious — condition requires intensive management; discuss with your veterinarian.'})[ed.prognosis.toLowerCase()] : ed.prognosis}</p>
   </div>` : ''}
 
   <div class="footer">
