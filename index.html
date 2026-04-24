@@ -3993,7 +3993,8 @@ async function cloudSaveCase(caseObj) {
   try {
     updateCloudBadge('syncing');
     const payload = JSON.parse(JSON.stringify(caseObj));
-    payload._html = buildRecordHtml(caseObj);
+    payload.type = 'html';
+    payload.html = buildRecordHtml(caseObj);
     const resp = await fetch(`${PA_SYNC_URL}?key=${CLINIC_KEY}`, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
