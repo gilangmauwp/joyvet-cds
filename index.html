@@ -3992,11 +3992,12 @@ function showCloudLogin() {
 async function cloudSaveCase(caseObj) {
   try {
     updateCloudBadge('syncing');
-    const clean = JSON.parse(JSON.stringify(caseObj));
+    const payload = JSON.parse(JSON.stringify(caseObj));
+    payload._html = buildRecordHtml(caseObj);
     const resp = await fetch(`${PA_SYNC_URL}?key=${CLINIC_KEY}`, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify(clean),
+      body: JSON.stringify(payload),
     });
     updateCloudBadge(resp.ok ? 'online' : 'offline');
   } catch(e) { updateCloudBadge('offline'); }
