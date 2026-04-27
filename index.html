@@ -811,6 +811,17 @@ select { cursor: pointer; }
   gap: 16px;
 }
 
+.pe-note-row { padding: 6px 0 0; }
+.pe-section-note {
+  width: 100%; padding: 8px 10px;
+  border: 1px solid var(--border); border-radius: 6px;
+  font-size: 0.82rem; font-family: inherit; color: var(--text);
+  resize: vertical; min-height: 52px; background: #fafafa;
+  transition: border-color .15s;
+}
+.pe-section-note:focus { outline: none; border-color: var(--primary); background: #fff; }
+.pe-section-note::placeholder { color: var(--muted); font-style: italic; }
+
 /* ── PRINT STYLES ─────────────────────────────────────────────────────── */
 /* ── CLIENT PRINT HEADER (hidden on screen, shown on client print) ────── */
 .client-print-header { display: none; }
@@ -2154,6 +2165,17 @@ function buildPhysicalExamForm() {
       inner.appendChild(fg);
     });
 
+    // ── doctor's note textarea at the bottom of each section
+    const noteRow = document.createElement('div');
+    noteRow.className = 'pe-note-row';
+    const noteArea = document.createElement('textarea');
+    noteArea.className = 'pe-section-note';
+    noteArea.id = 'pe-note-' + sec.id;
+    noteArea.placeholder = `Doctor's notes — ${sec.title.replace(/^\d+\.\s*/, '')}`;
+    noteArea.rows = 2;
+    noteRow.appendChild(noteArea);
+    inner.appendChild(noteRow);
+
     bodyWrap.appendChild(inner);
     accordion.appendChild(header);
     accordion.appendChild(bodyWrap);
@@ -2271,28 +2293,35 @@ function quickNormalExam() {
 }
 
 function quickNormalSection(secId) {
-  // Expand the section so the user can see the selections
   const accordion = document.getElementById('pe-sec-' + secId);
-  if (accordion && !accordion.classList.contains('open')) {
-    accordion.classList.add('open');
-    const hdr = accordion.querySelector('.pe-accordion-header');
-    if (hdr) hdr.setAttribute('aria-expanded', 'true');
-  }
-  document.querySelectorAll('[id^="pe-"][id$="-group"]').forEach(grp => {
-    const fg = grp.closest('.field-group');
-    if (!fg || fg.dataset.sectionId !== secId) return;
-    // BCS: normal is 5/9 (index 4), not the first option (1/9 Emaciated)
+  if (!accordion) return;
+  accordion.classList.add('open');
+  const hdr = accordion.querySelector('.pe-accordion-header');
+  if (hdr) hdr.setAttribute('aria-expanded', 'true');
+
+  accordion.querySelectorAll('[id^="pe-"][id$="-group"]').forEach(grp => {
+    // BCS: normal is 5/9 (index 4)
     if (grp.id === 'pe-bcs-group') {
-      const bcsOpts = grp.querySelectorAll('.radio-pill input');
-      if (bcsOpts[4]) { bcsOpts[4].checked = true; bcsOpts[4].dispatchEvent(new Event('change')); }
+      const opts = grp.querySelectorAll('.radio-pill input');
+      if (opts[4]) { opts[4].checked = true; opts[4].dispatchEvent(new Event('change')); }
       return;
     }
-    const firstRadio = grp.querySelector('.radio-pill:first-child input');
-    if (firstRadio) { firstRadio.checked = true; firstRadio.dispatchEvent(new Event('change')); }
-    const normalPill = Array.from(grp.querySelectorAll('.check-pill')).find(p => /^(normal|none)$/i.test(p.textContent.trim()));
-    if (normalPill) {
-      const cb = normalPill.querySelector('input');
-      if (!cb.checked) { cb.checked = true; cb.dispatchEvent(new Event('change')); }
+    if (grp.classList.contains('radio-group')) {
+      const pills = grp.querySelectorAll('.radio-pill');
+      const normalPill = Array.from(pills).find(p =>
+        /^normal/i.test(p.querySelector('span')?.textContent?.trim() || ''));
+      const target = (normalPill || pills[0])?.querySelector('input');
+      if (target) { target.checked = true; target.dispatchEvent(new Event('change')); }
+    } else if (grp.classList.contains('check-group')) {
+      grp.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+        if (cb.checked) { cb.checked = false; cb.dispatchEvent(new Event('change')); }
+      });
+      const normalPill = Array.from(grp.querySelectorAll('.check-pill')).find(p =>
+        /^(normal|none)$/i.test(p.querySelector('span')?.textContent?.trim() || ''));
+      if (normalPill) {
+        const cb = normalPill.querySelector('input');
+        if (cb) { cb.checked = true; cb.dispatchEvent(new Event('change')); }
+      }
     }
   });
 }
@@ -3200,7 +3229,7 @@ function printRecord() {
   ${examFindings.length?`
   <h2>Physical Examination Findings</h2>
   <table class="info">
-    ${examFindings.map(f=>`<tr><td>${f.section}</td><td>${f.values.join('<br>')}</td></tr>`).join('')}
+    ${examFindings.map(f=>`<tr><td>${f.section}</td><td>${f.values.join('<br>')}${f.note?`<div style="margin-top:3px;padding:3px 7px;background:#fffbeb;border-left:3px solid #f59e0b;font-style:italic;color:#78350f;font-size:11px;">📝 ${f.note}</div>`:''}</td></tr>`).join('')}
   </table>`:''}
 
   <h2>Differential Diagnosis</h2>
@@ -3439,7 +3468,8 @@ function captureExamFindings() {
       });
       if (vals.length) sectionFindings.push(`${fieldLabel}: ${vals.join(', ')}`);
     });
-    if (sectionFindings.length) findings.push({section: sectionTitle, values: sectionFindings});
+    const secNote = acc.querySelector('.pe-section-note')?.value?.trim() || '';
+    if (sectionFindings.length || secNote) findings.push({section: sectionTitle, values: sectionFindings, note: secNote});
   });
   return findings;
 }
@@ -3463,6 +3493,13 @@ function buildCaseObject() {
   const respRate    = document.getElementById('f_resp_rate')?.value || '';
   const examFindings = captureExamFindings();
 
+  const sectionNotes = {};
+  document.querySelectorAll('.pe-accordion').forEach(acc => {
+    const secId = (acc.id || '').replace('pe-sec-', '');
+    const note = acc.querySelector('.pe-section-note')?.value?.trim();
+    if (secId && note) sectionNotes[secId] = note;
+  });
+
   const topDdxEl = document.querySelector('#wd-body-content [style*="font-weight:800"]');
   const topDiagnosis = topDdxEl ? topDdxEl.textContent.trim() : '';
 
@@ -3484,7 +3521,7 @@ function buildCaseObject() {
     patientName, ownerName, species, breed,
     age: `${ageY}y ${ageM}m`, sex, weight, visitDate, caseNo,
     histNotes, doctorNotes, followupDate,
-    temperature, heartRate, respRate, examFindings,
+    temperature, heartRate, respRate, examFindings, sectionNotes,
     topDiagnosis, complaints, resultsData,
     formData: JSON.parse(JSON.stringify(formData)),
     savedAt: new Date().toISOString()
@@ -3581,6 +3618,7 @@ function viewCaseDetail(id) {
     `<div style="margin-bottom:8px;font-size:0.83rem;">
       <div style="font-weight:700;font-size:0.75rem;text-transform:uppercase;color:#334f84;margin-bottom:2px;">${f.section}</div>
       ${f.values.map(v=>`<div style="color:var(--text);line-height:1.5;padding-left:8px;">• ${v}</div>`).join('')}
+      ${f.note ? `<div style="margin-top:4px;padding:5px 9px;background:#fffbeb;border-left:3px solid #f59e0b;border-radius:0 4px 4px 0;font-style:italic;color:#78350f;font-size:0.8rem;">📝 ${f.note}</div>` : ''}
     </div>`).join('') : '';
 
   body.innerHTML = `
@@ -3888,7 +3926,8 @@ function buildRecordHtml(c) {
   const warnItems = (ed.when_to_return && ed.when_to_return.length) ? ed.when_to_return : (ed.red_flags || []);
   const progMap = {good:'✅ Good — with appropriate treatment, full recovery is expected.',fair:'🟡 Fair — good improvement expected with consistent treatment and monitoring.',guarded:'🟠 Guarded — outcome depends on treatment response; close monitoring essential.',poor:'🔴 Serious — requires intensive management; discuss further with your veterinarian.'};
   const progText = ed.prognosis ? (progMap[(ed.prognosis+'').toLowerCase()] || ed.prognosis) : '';
-  const examRows = (c.examFindings || []).map(f => `<tr><td class="lbl">${f.section}</td><td>${f.values.join('<br>')}</td></tr>`).join('');
+  const examRows = (c.examFindings || []).map(f =>
+    `<tr><td class="lbl">${f.section}</td><td>${f.values.join('<br>')}${f.note ? `<div style="margin-top:4px;padding:4px 8px;background:#fffbeb;border-left:3px solid #f59e0b;border-radius:0 3px 3px 0;font-style:italic;color:#78350f;font-size:11px;">📝 ${f.note}</div>` : ''}</td></tr>`).join('');
   const bullets = items => (items||[]).map(i=>`<div class="b">• ${i}</div>`).join('');
   const warns   = items => (items||[]).map(i=>`<div class="w">⚠ ${i}</div>`).join('');
 
@@ -3960,11 +3999,36 @@ async function saveToDrive(caseObj) {
   try {
     if (badge) { badge.textContent = '📁 Saving…'; badge.style.display = 'inline'; }
     const html = buildRecordHtml(caseObj);
+    const tx = (caseObj.resultsData && caseObj.resultsData.treatment) || {};
+    const payload = {
+      type:      'html',
+      folderId:  '1pbzi0XTNdoMK7fjp8k93ewCZ5pJRJLab',
+      data:      caseObj,
+      html:      html,
+      sheetRow: {
+        date:            caseObj.visitDate || new Date().toISOString().slice(0,10),
+        ownerName:       caseObj.ownerName || '',
+        patientName:     caseObj.patientName || '',
+        species:         caseObj.species || '',
+        breed:           caseObj.breed || '',
+        age:             caseObj.age || '',
+        sex:             (caseObj.sex || '').replace(/_/g,' '),
+        weight:          caseObj.weight || '',
+        firstVisitDate:  caseObj.visitDate || '',
+        firstComplaint:  (caseObj.complaints || []).join('; '),
+        ddx:             caseObj.topDiagnosis || '',
+        tests:           ((caseObj.resultsData && caseObj.resultsData.tests && caseObj.resultsData.tests.tier1) || []).join('; '),
+        diagnosis:       caseObj.topDiagnosis || '',
+        treatment:       [...(tx.medications||[]), ...(tx.procedures||[])].join('; '),
+        doctorNotes:     caseObj.doctorNotes || '',
+        followupDate:    caseObj.followupDate || '',
+      },
+    };
     await fetch(url, {
       method:  'POST',
       mode:    'no-cors',
       headers: {'Content-Type': 'text/plain'},
-      body:    JSON.stringify({type: 'html', data: caseObj, html}),
+      body:    JSON.stringify(payload),
     });
     if (badge) { badge.textContent = '📁 Drive ✓'; badge.style.background = '#e8f5e9'; badge.style.color = '#2e7d32'; }
   } catch(e) {
