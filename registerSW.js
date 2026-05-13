@@ -1,0 +1,1 @@
+if('serviceWorker' in navigator) {window.addEventListener('load', () => {navigator.serviceWorker.register('/joyvet-cds/sw.js', { scope: '/joyvet-cds/' })})}
