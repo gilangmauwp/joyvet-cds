@@ -1,0 +1,29 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// JoyVet CDS v2 — Firestore Security Rules
+//
+// ACCESS MODEL: INTENTIONALLY OPEN READ/WRITE.
+//
+// This is a deliberate team decision for JoyVet Care, Jimbaran, Bali.
+// Rationale:
+//   • The clinic team shares devices and trusts each other.
+//   • No authentication system is in place by design.
+//   • The database contains no financial data or government-ID data.
+//   • The open-access risk is explicitly documented in README.md.
+//
+// Recovery from unauthorised writes/deletions:
+//   • Weekly JSON backups (Settings → Export) stored off-site.
+//   • Firebase Scheduled Backups to Cloud Storage (see README §Backups).
+//
+// If you ever need to add authentication, replace `allow read, write: if true`
+// with `allow read, write: if request.auth != null` and enable Firebase Auth.
+// ─────────────────────────────────────────────────────────────────────────────
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      // INTENTIONALLY OPEN — see comment block above.
+      allow read, write: if true;
+    }
+  }
+}

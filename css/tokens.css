@@ -1,0 +1,45 @@
+/* tokens.css — Single source of truth for all design tokens */
+:root {
+  /* ── Colors ── */
+  --c-primary:       #334f84;
+  --c-primary-dark:  #1a2d50;
+  --c-accent:        #ffff04;
+  --c-bg:            #f4f6fb;
+  --c-surface:       #ffffff;
+  --c-text:          #1a2d50;
+  --c-text-muted:    #6b7a99;
+  --c-danger:        #c0392b;
+  --c-success:       #27ae60;
+  --c-warning:       #e67e22;
+  --c-wellness:      #2ecc71;
+
+  /* ── Spacing scale (4px base, doublings) ── */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-7: 28px;
+  --sp-8: 32px;
+
+  /* ── Border radius ── */
+  --r-sm: 4px;
+  --r-md: 8px;
+  --r-lg: 16px;
+
+  /* ── Typography ── */
+  --font-sans: 'Inter', system-ui, sans-serif;
+
+  /* ── Shadows ── */
+  --shadow-sm: 0 1px 3px rgba(26, 45, 80, 0.10), 0 1px 2px rgba(26, 45, 80, 0.06);
+  --shadow-md: 0 4px 6px rgba(26, 45, 80, 0.10), 0 2px 4px rgba(26, 45, 80, 0.08);
+  --shadow-lg: 0 10px 15px rgba(26, 45, 80, 0.12), 0 4px 6px rgba(26, 45, 80, 0.08);
+
+  /* ── Transitions ── */
+  --transition-fast: 120ms ease;
+  --transition-base: 200ms ease;
+
+  /* ── Sidebar width ── */
+  --sidebar-width: 240px;
+}

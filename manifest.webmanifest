@@ -1,0 +1,13 @@
+{
+  "name": "JoyVet CDS",
+  "short_name": "JoyVet",
+  "description": "Veterinary medical records and clinical decision support",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#334f84",
+  "background_color": "#f4f6fb",
+  "icons": [
+    { "src": "assets/logo.png", "sizes": "any", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

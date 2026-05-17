@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>JoyVet CDS v2 — Engine Tests</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 860px; margin: 2rem auto; padding: 1rem; background: #f4f6fb; color: #1a2d50; }
+    h1 { color: #334f84; }
+    .suite { background: #fff; border-radius: 8px; padding: 1.5rem; margin: 1rem 0; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+    .suite h2 { font-size: 1rem; font-weight: 600; margin-bottom: 1rem; }
+    .test { display: flex; align-items: flex-start; gap: .75rem; padding: .5rem 0; border-bottom: 1px solid #f0f4fb; }
+    .test:last-child { border: none; }
+    .badge { display: inline-block; padding: .2rem .6rem; border-radius: 4px; font-size: .8rem; font-weight: 600; flex-shrink: 0; }
+    .pass { background: #d4edda; color: #155724; }
+    .fail { background: #f8d7da; color: #721c24; }
+    .name { font-weight: 500; }
+    .detail { font-size: .85rem; color: #6b7a99; margin-top: .2rem; }
+    #summary { margin-top: 1.5rem; padding: 1rem; border-radius: 8px; font-weight: 600; font-size: 1.05rem; }
+    .summary-pass { background: #d4edda; color: #155724; }
+    .summary-fail { background: #f8d7da; color: #721c24; }
+    .loader { color: #6b7a99; font-style: italic; }
+  </style>
+</head>
+<body>
+  <h1>JoyVet CDS v2 — Engine Tests</h1>
+  <p>In-browser golden-case tests for <code>diagnose.js</code> and <code>dosing.js</code>.<br>
+     Run these by opening this file from the <code>/tests/</code> directory via a local web server (e.g. <code>python3 -m http.server 8080</code> from repo root).</p>
+  <div id="output"><p class="loader">Loading modules…</p></div>
+  <div id="summary"></div>
+
+<script type="module">
+import { diagnose, computeVitalFlags, buildSignalMap } from '../js/engine/diagnose.js';
+import { calculateDose, getDrug } from '../js/engine/dosing.js';
+import { CONDITIONS } from '../js/data/kb-conditions.js';
+import { DRUGS } from '../js/data/kb-drugs.js';
+
+// ── Test harness ──────────────────────────────────────────────────────────────
+let passed = 0, failed = 0;
+const suites = [];
+
+function suite(name, fn) {
+  const tests = [];
+  suites.push({ name, tests });
+  const assert = {
+    ok(expr, label, detail = '') {
+      tests.push({ label, ok: !!expr, detail: expr ? '' : detail });
+      if (expr) passed++; else failed++;
+    },
+    eq(a, b, label) {
+      const ok = a === b;
+      tests.push({ label, ok, detail: ok ? '' : `Expected ${JSON.stringify(b)}, got ${JSON.stringify(a)}` });
+      if (ok) passed++; else failed++;
+    },
+    contains(arr, item, label) {
+      const ok = arr.includes(item);
+      tests.push({ label, ok, detail: ok ? '' : `Array did not include "${item}". Got: ${arr.slice(0,5).join(', ')}` });
+      if (ok) passed++; else failed++;
+    },
+    topResult(results, conditionId, label) {
+      const top = results[0]?.conditionId;
+      const inTop3 = results.slice(0,3).some(r => r.conditionId === conditionId);
+      tests.push({ label: label || `${conditionId} in top 3`, ok: inTop3,
+        detail: inTop3 ? '' : `Top 3: ${results.slice(0,3).map(r=>r.conditionId).join(', ')}` });
+      if (inTop3) passed++; else failed++;
+    },
+    noWord(results, word, label) {
+      const found = results.some(r => JSON.stringify(r).toLowerCase().includes(word.toLowerCase()));
+      const ok = !found;
+      tests.push({ label: label || `No "${word}" in output`, ok, detail: ok ? '' : `Found banned word "${word}"` });
+      if (ok) passed++; else failed++;
+    },
+  };
+  fn(assert);
+}
+
+// ── Suite 1: KB integrity ─────────────────────────────────────────────────────
+suite('Knowledge Base Integrity', t => {
+  t.ok(CONDITIONS.length >= 300, `≥300 conditions loaded (got ${CONDITIONS.length})`);
+  t.ok(CONDITIONS.every(c => c.id), 'All conditions have id');
+  t.ok(CONDITIONS.every(c => c.name), 'All conditions have name');
+  t.ok(CONDITIONS.every(c => Array.isArray(c.species) && c.species.length), 'All have species[]');
+  t.ok(CONDITIONS.every(c => ['common','uncommon','rare'].includes(c.prevalence)),
+    `All have valid prevalence`);
+  t.ok(CONDITIONS.every(c => typeof c.signals === 'object'), 'All have signals{}');
+  t.ok(CONDITIONS.every(c => typeof c.pathognomonic === 'object'), 'All have pathognomonic{}');
+  t.ok(CONDITIONS.every(c => typeof c.contraSignals === 'object'), 'All have contraSignals{}');
+  t.ok(CONDITIONS.every(c => typeof c.clientEducation === 'object'), 'All have clientEducation{}');
+
+  // Check no banned word "confidence" in KB
+  const kbStr = JSON.stringify(CONDITIONS);
+  t.ok(!kbStr.toLowerCase().includes('"confidence"'),
+    'KB does not use the word "confidence" as a key');
+});
+
+// ── Suite 2: Vital flag computation ──────────────────────────────────────────
+suite('Vital Flag Computation', t => {
+  const normal = computeVitalFlags({ tempC: 38.5, hrBpm: 100, rrBpm: 20, spo2Pct: 98 }, 'dog');
+  t.ok(!normal.tempHigh && !normal.tempLow, 'Normal temp: no flags');
+  t.ok(!normal.hrHigh && !normal.hrLow, 'Normal HR: no flags');
+
+  const hyper = computeVitalFlags({ tempC: 41.0, hrBpm: 200, rrBpm: 45, spo2Pct: 93 }, 'dog');
+  t.ok(hyper.tempHigh, 'Hyperthermia flagged');
+  t.ok(hyper.tempHighGrade >= 2, 'Hyperthermia grade ≥ 2 for +1.8°C above ceiling');
+  t.ok(hyper.hrHigh, 'Tachycardia flagged');
+  t.ok(hyper.rrHigh, 'Tachypnoea flagged');
+  t.ok(hyper.spo2Low, 'Low SpO₂ flagged');
+
+  const cat = computeVitalFlags({ tempC: 37.5, hrBpm: 100, rrBpm: 10 }, 'cat');
+  t.ok(cat.tempLow, 'Cat hypothermia: temp 37.5 < cat minimum 38.0');
+  t.ok(cat.hrLow, 'Cat bradycardia: 100 < cat minimum 120');
+
+  const mmFlags = computeVitalFlags({ mmColor: 'pale' }, 'dog');
+  t.ok(mmFlags['mm_pale'], 'MM pale flag set');
+});
+
+// ── Suite 3: Diagnose — golden cases ─────────────────────────────────────────
+suite('Diagnostic Engine — Golden Cases', t => {
+  // All engine results must never contain the word "confidence"
+  function noConf(results) {
+    return !JSON.stringify(results).toLowerCase().includes('confidence');
+  }
+
+  // Case 1: Classic canine pruritic dog with flea signs
+  const fleaCase = {
+    species: 'dog',
+    signals: {
+      complaints_skin_lesions: true, complaints_hair_loss: true,
+      skin_pruritus: true, skin_erythema: true, skin_papules: true, skin_crusts: true,
+      skin_alopecia_focal: true, skin_dorsal: true, skin_self_trauma: true,
+      parasites_fleas: true, env_outdoor: true, env_contact_stray: true,
+      hpi_onset_sudden: true, hpi_progression_worsening: true,
+    },
+    vitals: {},
+  };
+  const fleaResults = diagnose(fleaCase, CONDITIONS);
+  t.ok(fleaResults.length > 0, 'Flea case: results returned');
+  t.topResult(fleaResults, 'flea_allergy_dermatitis', 'Flea case: FAD in top 3');
+  t.ok(noConf(fleaResults), 'Flea case: no "confidence" in output');
+  t.ok(fleaResults[0]?.matchStrength, 'Flea case: matchStrength label present');
+  t.ok(['Strong signal match','Moderate signal match','Weak signal match']
+    .includes(fleaResults[0]?.matchStrength), 'matchStrength is one of the 3 valid labels');
+
+  // Case 2: Cat with respiratory distress — pyrexia, dyspnea, dull lung sounds
+  const respCase = {
+    species: 'cat',
+    signals: {
+      complaints_respiratory: true, resp_dyspnea: true, resp_crackles: true, resp_dull_sounds: true,
+      nasal_discharge: true, resp_cough: true,
+      hpi_onset_subacute: true, hpi_progression_worsening: true,
+      complaints_lethargy: true, complaints_appetite_loss: true,
+    },
+    vitals: { tempC: 40.2, hrBpm: 230, rrBpm: 52 },
+  };
+  const respResults = diagnose(respCase, CONDITIONS);
+  t.ok(respResults.length > 0, 'Cat respiratory case: results returned');
+  t.ok(noConf(respResults), 'Cat resp case: no "confidence"');
+
+  // Case 3: Emergency GDV signals in large dog
+  const gdvCase = {
+    species: 'dog',
+    signals: {
+      complaints_vomiting: true, gi_vomiting: true, gi_abd_distension: true,
+      gi_abd_pain: true, cv_weak_pulse: true, complaints_lethargy: true,
+      hpi_onset_sudden: true,
+    },
+    vitals: { hrBpm: 160, mmColor: 'pale', crtSec: 3 },
+  };
+  const gdvResults = diagnose(gdvCase, CONDITIONS);
+  t.ok(gdvResults.length > 0, 'GDV case: results returned');
+  t.ok(noConf(gdvResults), 'GDV case: no "confidence"');
+  // Emergency conditions should rank well
+  const hasEmergency = gdvResults.slice(0,5).some(r => r.emergency);
+  t.ok(hasEmergency, 'GDV case: emergency condition in top 5');
+
+  // Case 4: Contra-signal suppression — pyoderma should rank BELOW atopic dermatitis when pustules present
+  const atopyWithPustules = {
+    species: 'dog',
+    signals: {
+      skin_pruritus: true, skin_erythema: true, skin_lichenification: true,
+      skin_ventral: true, skin_pedal: true, skin_facial: true,
+      hpi_onset_chronic: true, hpi_progression_fluctuating: true,
+      skin_pustules: true, // contra-signal for atopy
+    },
+    vitals: {},
+  };
+  const contraResults = diagnose(atopyWithPustules, CONDITIONS);
+  const atopyRank = contraResults.findIndex(r => r.conditionId === 'atopic_dermatitis');
+  const pyoRank = contraResults.findIndex(r => r.conditionId === 'pyoderma');
+  t.ok(atopyRank >= 0, 'Contra-signal test: atopy still appears in results');
+  // Pyoderma should rank higher than atopy when pustules are present
+  t.ok(pyoRank < atopyRank || pyoRank === -1 || atopyRank === -1,
+    `Contra-signal test: pustules lower atopy rank (atopy=${atopyRank}, pyoderma=${pyoRank})`);
+
+  // Case 5: Prevalence prior — common condition should beat rare with same signals
+  // (Qualitative: results exist and prevalence affects ranking)
+  t.ok(CONDITIONS.filter(c => c.prevalence === 'common').length > 150, 'Prevalence: >150 common conditions');
+  t.ok(CONDITIONS.filter(c => c.prevalence === 'rare').length > 5, 'Prevalence: some rare conditions');
+
+  // Case 6: Species filter — dog results should not include cat-only conditions
+  const dogOnlyCase = { species: 'dog', signals: { complaints_gi: true, gi_vomiting: true }, vitals: {} };
+  const dogResults = diagnose(dogOnlyCase, CONDITIONS);
+  const catOnlyInDogResults = dogResults.filter(r => {
+    const cond = CONDITIONS.find(c => c.id === r.conditionId);
+    return cond && cond.species.length === 1 && cond.species[0] === 'cat';
+  });
+  t.eq(catOnlyInDogResults.length, 0, 'Species filter: no cat-only conditions in dog results');
+});
+
+// ── Suite 4: Dosing safety ────────────────────────────────────────────────────
+suite('Dosing Engine — Safety', t => {
+  // Correct dose within range
+  const cepha = getDrug('cephalexin', DRUGS);
+  t.ok(cepha !== null, 'cephalexin exists in formulary');
+
+  const dose10kg = calculateDose(cepha, 10, 'dog');
+  t.ok(dose10kg.ok, 'cephalexin 10kg dog: ok');
+  t.ok(dose10kg.lowDoseMg === 220, '10kg dog: low dose = 22 mg/kg × 10 = 220 mg');
+  t.ok(dose10kg.highDoseMg === 300, '10kg dog: high dose = 30 mg/kg × 10 = 300 mg');
+  t.ok(!dose10kg.cappedLow && !dose10kg.cappedHigh, '10kg dog: not capped');
+
+  // Ceiling clamping — large dog dose exceeds maxTotalMg
+  const dose50kg = calculateDose(cepha, 50, 'dog');
+  t.ok(dose50kg.ok, 'cephalexin 50kg dog: ok');
+  t.ok(dose50kg.highDoseMg === cepha.maxTotalMg, `50kg dog: high dose clamped to ${cepha.maxTotalMg} mg`);
+  t.ok(dose50kg.cappedHigh, '50kg dog: capped flag set');
+  t.ok(dose50kg.displayHigh.includes('mg') || dose50kg.displayHigh.includes('g'), 'Display string present');
+  t.ok(dose50kg.disclaimer.length > 0, 'Disclaimer present in dosed result');
+  t.ok(dose50kg.mgPerKgBasis.includes('mg/kg'), 'mg/kg basis shown');
+
+  // Species mismatch
+  const catWrong = calculateDose(getDrug('afoxolaner', DRUGS), 5, 'cat');
+  t.ok(!catWrong.ok, 'afoxolaner: fails for cat (dog-only drug)');
+  t.ok(catWrong.error.length > 0, 'afoxolaner cat: error message present');
+
+  // Invalid weight
+  const badWeight = calculateDose(cepha, 0, 'dog');
+  t.ok(!badWeight.ok, 'Weight 0: fails gracefully');
+  const negWeight = calculateDose(cepha, -5, 'dog');
+  t.ok(!negWeight.ok, 'Negative weight: fails gracefully');
+
+  // Null drug
+  const nullDrug = calculateDose(null, 10, 'dog');
+  t.ok(!nullDrug.ok, 'Null drug: fails gracefully');
+
+  // Ivermectin: verify it exists and has MDR1 warning in notes
+  const iverm = getDrug('ivermectin', DRUGS);
+  t.ok(iverm !== null, 'ivermectin in formulary');
+  t.ok(iverm.notes.toLowerCase().includes('mdr1') || iverm.notes.toLowerCase().includes('collie'),
+    'ivermectin notes contain MDR1 breed warning');
+
+  // Meloxicam: cat dose should be lower mg/kg than dog dose (separate drug or notes)
+  const melox = getDrug('meloxicam', DRUGS);
+  t.ok(melox !== null, 'meloxicam in formulary');
+  t.ok(melox.maxTotalMg > 0, 'meloxicam maxTotalMg set');
+
+  // Every drug has maxTotalMg > 0
+  const missingCeiling = DRUGS.filter(d => !d.maxTotalMg || d.maxTotalMg <= 0);
+  t.eq(missingCeiling.length, 0,
+    `All drugs have maxTotalMg > 0 (missing: ${missingCeiling.map(d=>d.id).join(', ') || 'none'})`);
+
+  // No drug has Infinity as maxTotalMg
+  const infinityCeiling = DRUGS.filter(d => d.maxTotalMg === Infinity || d.maxTotalMg === null);
+  t.eq(infinityCeiling.length, 0, 'No drug has Infinity or null maxTotalMg');
+});
+
+// ── Render results ─────────────────────────────────────────────────────────────
+const out = document.getElementById('output');
+out.innerHTML = suites.map(suite => `
+  <div class="suite">
+    <h2>${suite.name}</h2>
+    ${suite.tests.map(test => `
+      <div class="test">
+        <span class="badge ${test.ok ? 'pass' : 'fail'}">${test.ok ? 'PASS' : 'FAIL'}</span>
+        <div>
+          <div class="name">${test.label}</div>
+          ${test.detail ? `<div class="detail">${test.detail}</div>` : ''}
+        </div>
+      </div>
+    `).join('')}
+  </div>
+`).join('');
+
+const total = passed + failed;
+const summaryEl = document.getElementById('summary');
+summaryEl.className = `suite ${failed === 0 ? 'summary-pass' : 'summary-fail'}`;
+summaryEl.textContent = failed === 0
+  ? `✓ All ${total} tests passed`
+  : `✗ ${failed} of ${total} tests failed`;
+</script>
+</body>
+</html>

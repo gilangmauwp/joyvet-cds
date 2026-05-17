@@ -1,0 +1,82 @@
+/* print.css — A4 print layout for client-facing records */
+
+@media print {
+  @page {
+    size: A4;
+    margin: 18mm 15mm;
+  }
+
+  /* Hide all chrome */
+  #sidebar, #offline-banner, #backup-banner,
+  #toast-container, #modal-container,
+  .skip-link, .btn, .btn-primary, .btn-secondary, .btn-danger,
+  .no-print, [data-no-print] {
+    display: none !important;
+  }
+
+  body {
+    font-family: 'Inter', Arial, sans-serif;
+    font-size: 11pt;
+    color: #000;
+    background: #fff;
+    margin: 0;
+  }
+
+  #content-wrapper {
+    margin: 0;
+    padding: 0;
+  }
+
+  #main-content, #app {
+    width: 100%;
+    max-width: 100%;
+    padding: 0;
+    margin: 0;
+  }
+
+  /* Print-only elements */
+  .print-show { display: block !important; }
+  .print-header {
+    border-bottom: 2pt solid #334f84;
+    padding-bottom: 8pt;
+    margin-bottom: 12pt;
+  }
+  .print-header h1 {
+    font-size: 16pt;
+    color: #334f84;
+    margin: 0 0 2pt;
+  }
+  .print-header .clinic-info {
+    font-size: 9pt;
+    color: #444;
+  }
+
+  /* Page-break rules */
+  h1, h2, h3 { page-break-after: avoid; }
+  .card { page-break-inside: avoid; }
+  table { page-break-inside: auto; }
+  tr { page-break-inside: avoid; }
+  .print-break { page-break-before: always; }
+
+  /* Tables */
+  .table { width: 100%; border-collapse: collapse; }
+  .table th, .table td {
+    border: 0.5pt solid #ccc;
+    padding: 4pt 6pt;
+    font-size: 10pt;
+  }
+  .table th { background: #f0f4fb; font-weight: 600; }
+
+  /* Disclaimer */
+  .print-disclaimer {
+    margin-top: 16pt;
+    padding-top: 8pt;
+    border-top: 0.5pt solid #999;
+    font-size: 8pt;
+    color: #555;
+    font-style: italic;
+  }
+
+  a { color: inherit; text-decoration: none; }
+  a[href]::after { content: none; }
+}
