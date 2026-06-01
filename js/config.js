@@ -3,12 +3,12 @@
 // See README.md §1 for setup instructions.
 
 export const firebaseConfig = {
-  apiKey:            "REPLACE_WITH_YOUR_API_KEY",
-  authDomain:        "REPLACE_WITH_YOUR_PROJECT_ID.firebaseapp.com",
-  projectId:         "REPLACE_WITH_YOUR_PROJECT_ID",
-  storageBucket:     "REPLACE_WITH_YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "REPLACE_WITH_YOUR_MESSAGING_SENDER_ID",
-  appId:             "REPLACE_WITH_YOUR_APP_ID",
+  apiKey:            "AIzaSyC3qxnhwretjGqXkYt4O_Q6Xpv4fl0G-CA",
+  authDomain:        "joyvet-care.firebaseapp.com",
+  projectId:         "joyvet-care",
+  storageBucket:     "joyvet-care.firebasestorage.app",
+  messagingSenderId: "300223001036",
+  appId:             "1:300223001036:web:7c1f1647e1f79e69306d69",
 };
 
 // Application constants
